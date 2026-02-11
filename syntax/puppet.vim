@@ -64,9 +64,15 @@ syn match   puppetVariable      '\$\(::\)\?[a-zA-Z_]\w*\(::[a-zA-Z_]\w*\)*'
 syn match   puppetVariable      '\$\w\+\(\[\d\+\]\|\[[''"]\w\+['"]\]\)*'
 
 " ─── Resource types (built-in core) ───────────────────────────────
+" Types with no attribute/metaparam name conflicts — safe as keywords
 syn keyword puppetResourceType
-      \ exec file filebucket group notify package
-      \ resources schedule service stage tidy user
+      \ exec filebucket package
+      \ resources service stage tidy
+
+" Types that also serve as attribute/metaparam names (file, group,
+" notify, schedule, user) — only highlight in declaration position
+" (before {) so they don't override attribute coloring inside bodies
+syn match   puppetResourceType '\<\(file\|group\|notify\|schedule\|user\)\>\ze\s*{'
 
 " Resource types from core modules (commonly used)
 syn keyword puppetResourceType
@@ -91,27 +97,39 @@ syn keyword puppetResourceType
 
 " ─── Metaparameters ───────────────────────────────────────────────
 " Style guide: these go at the end of resource declarations
-syn keyword puppetMetaparam     contained
-      \ alias audit before loglevel noop
-      \ notify require schedule subscribe tag
+syn keyword puppetMetaparam
+      \ alias audit before loglevel noop subscribe
+
+" Metaparams that conflict with resource type names — match only
+" in attribute position (before =>) so they don't steal declaration color
+syn match   puppetMetaparam '\<\(notify\|schedule\)\>\ze\s*=>'
+
+" NOTE: 'require' and 'tag' also serve as metaparams but are already
+" in puppetFunction (keywords beat matches), so they get Function color.
+" This is acceptable — both are more commonly used as functions.
 
 " ─── Resource attributes (common) ─────────────────────────────────
 " Style guide: 'ensure' should be the first attribute
-syn keyword puppetAttribute     contained
-      \ ensure present absent purged latest installed
-      \ running stopped enabled disabled
-      \ directory link file
-      \ command creates cwd environment logoutput
+" Attribute names — the left-hand side of =>
+syn keyword puppetAttribute
+      \ ensure
+      \ command creates cwd environment group logoutput
       \ onlyif provider refreshonly returns timeout
       \ tries try_sleep unless path refresh
       \ content source target owner mode recurse
       \ purge force backup checksum
       \ gid groups home managehome membership password
-      \ password_max_age password_min_age shell system uid
+      \ password_max_age password_min_age shell system uid user
       \ allowdupe comment expiry
       \ enable hasrestart hasstatus manifest pattern start
       \ status stop binary control
       \ name title
+
+" Ensure values and resource states — the right-hand side of =>
+syn keyword puppetEnsureValue
+      \ present absent purged latest installed
+      \ running stopped enabled disabled
+      \ directory link
 
 " ─── Language keywords ────────────────────────────────────────────
 syn keyword puppetKeyword       class define node inherits
@@ -177,7 +195,7 @@ syn keyword puppetFunction
       \ debug defined dig digest downcase
       \ each emerg empty epp err
       \ eyaml_lookup_key
-      \ fail file filter find_file find_template
+      \ fail filter find_file find_template
       \ flatten floor fqdn_rand
       \ generate get getvar group_by
       \ hiera hiera_array hiera_hash hiera_include
@@ -273,6 +291,7 @@ hi def link puppetVariable        Identifier
 hi def link puppetResourceType    Type
 hi def link puppetMetaparam       Special
 hi def link puppetAttribute       Keyword
+hi def link puppetEnsureValue    Constant
 hi def link puppetKeyword         Keyword
 hi def link puppetConditional     Conditional
 hi def link puppetOperator        Operator
