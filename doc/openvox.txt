@@ -25,7 +25,7 @@ CONTENTS                                                   *openvox-contents*
 ==============================================================================
 1. INTRODUCTION                                         *openvox-introduction*
 
-openvox.vim is a comprehensive Puppet IDE plugin for Vim that provides:
+vim-openvox is a comprehensive Puppet IDE plugin for Vim that provides:
 
   - Full Puppet 8 syntax highlighting (resource types, functions, data types,
     operators, heredocs, interpolation, EPP templates)
@@ -47,18 +47,18 @@ https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm
 
 Using Pathogen: >
     cd ~/.vim/bundle
-    git clone https://github.com/cvquesty/openvox.vim.git
+    git clone https://github.com/cvquesty/vim-openvox.git
 <
 Using vim-plug: >
-    Plug 'cvquesty/openvox.vim'
+    Plug 'cvquesty/vim-openvox'
 <
 Using Vundle: >
-    Plugin 'cvquesty/openvox.vim'
+    Plugin 'cvquesty/vim-openvox'
 <
 Using native packages (Vim 8+): >
     mkdir -p ~/.vim/pack/plugins/start
     cd ~/.vim/pack/plugins/start
-    git clone https://github.com/cvquesty/openvox.vim.git
+    git clone https://github.com/cvquesty/vim-openvox.git
 <
 Requirements:~
   - Vim 8.0+ (for async job support)
@@ -189,7 +189,7 @@ Example .vimrc configuration: >
 ==============================================================================
 6. LINTING                                                 *openvox-linting*
 
-openvox.vim integrates three linters that run asynchronously:
+vim-openvox integrates three linters that run asynchronously:
 
 puppet-lint~
   Checks .pp manifests against the Puppet Style Guide. Runs automatically
@@ -255,7 +255,7 @@ in visual mode.
 ==============================================================================
 8. COMPLETION                                           *openvox-completion*
 
-openvox.vim provides context-aware omni-completion (Ctrl-X Ctrl-O):
+vim-openvox provides context-aware omni-completion (Ctrl-X Ctrl-O):
 
   - Inside a resource body → resource-specific attributes
   - After `ensure =>` → valid ensure values for that resource type
@@ -303,7 +303,7 @@ All generated code follows the Puppet Style Guide conventions:
 ==============================================================================
 11. FILETYPE DETECTION                                   *openvox-filetypes*
 
-openvox.vim detects the following file types:
+vim-openvox detects the following file types:
 
   *.pp                          puppet
   *.epp                         epuppet (with host syntax detection)
@@ -320,7 +320,7 @@ EPP templates automatically detect the host language from the filename:
 ==============================================================================
 12. STYLE GUIDE                                         *openvox-styleguide*
 
-openvox.vim enforces the Puppet Style Guide throughout:
+vim-openvox enforces the Puppet Style Guide throughout:
 
 Indentation:~
   - Two-space soft tabs (expandtab, shiftwidth=2)
@@ -354,7 +354,7 @@ Variables:~
 ==============================================================================
 13. REPLACING OTHER PLUGINS                             *openvox-replacing*
 
-openvox.vim is designed to replace these plugins:
+vim-openvox is designed to replace these plugins:
 
   puppet-syntax-vim / vim-puppet (rodjek)
       → Full syntax, indent, ftdetect, ftplugin replacement

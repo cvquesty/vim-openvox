@@ -2,7 +2,7 @@
 " Maintainer: xAI
 " License:    Apache-2.0
 "
-" openvox.vim: A comprehensive Puppet IDE plugin for Vim
+" vim-openvox: A comprehensive Puppet IDE plugin for Vim
 " Supports Puppet 8 with full style guide compliance
 
 if exists('g:loaded_openvox') || &compatible

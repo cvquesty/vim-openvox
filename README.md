@@ -1,4 +1,4 @@
-# openvox.vim
+# vim-openvox
 
 A comprehensive Puppet 8 IDE plugin for Vim. Replaces multiple Puppet-related
 plugins with a single, cohesive solution built around the official
@@ -35,24 +35,24 @@ plugins with a single, cohesive solution built around the official
 **Pathogen:**
 ```bash
 cd ~/.vim/bundle
-git clone https://github.com/cvquesty/openvox.vim.git
+git clone https://github.com/cvquesty/vim-openvox.git
 ```
 
 **vim-plug:**
 ```vim
-Plug 'cvquesty/openvox.vim'
+Plug 'cvquesty/vim-openvox'
 ```
 
 **Native packages (Vim 8+):**
 ```bash
 mkdir -p ~/.vim/pack/plugins/start
 cd ~/.vim/pack/plugins/start
-git clone https://github.com/cvquesty/openvox.vim.git
+git clone https://github.com/cvquesty/vim-openvox.git
 ```
 
 ## Quick Start
 
-openvox.vim works out of the box. Open any `.pp` file and you get syntax
+vim-openvox works out of the box. Open any `.pp` file and you get syntax
 highlighting, indentation, and auto-linting on save.
 
 ### Key Mappings
@@ -115,9 +115,9 @@ let g:openvox_fold = 1
 
 ## Replacing Other Plugins
 
-openvox.vim is designed to replace:
+vim-openvox is designed to replace:
 
-| Old Plugin | openvox.vim Replacement |
+| Old Plugin | vim-openvox Replacement |
 |------------|----------------------|
 | `puppet-syntax-vim` / `vim-puppet` (rodjek) | Full syntax, indent, ftdetect, ftplugin |
 | `vim-puppet-lint` | Async puppet-lint + quickfix |
