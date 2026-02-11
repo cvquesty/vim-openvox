@@ -1,0 +1,448 @@
+" autoload/openvox/lint.vim — Async linting integration
+" Maintainer: xAI
+" License:    Apache-2.0
+"
+" Integrates:
+"   - puppet-lint   (for .pp manifest files)
+"   - metadata-json-lint (for metadata.json)
+"   - yamllint      (for Hiera YAML data files)
+"
+" All linters run asynchronously via Vim's job_start() and populate
+" the quickfix or location list.
+
+" ─── State ────────────────────────────────────────────────────────
+let s:lint_job = v:null
+let s:lint_output = []
+let s:lint_errors = []
+let s:lint_type = ''
+
+" ─── puppet-lint ──────────────────────────────────────────────────
+
+function! openvox#lint#run(...) abort
+  let l:file = expand('%:p')
+  if empty(l:file) || !filereadable(l:file)
+    echohl WarningMsg | echo 'puppet-lint: No file to lint' | echohl None
+    return
+  endif
+
+  " Save the buffer first
+  if &modified
+    write
+  endif
+
+  " Kill any running lint job
+  call s:kill_job()
+
+  let s:lint_output = []
+  let s:lint_errors = []
+  let s:lint_type = 'puppet-lint'
+
+  let l:cmd = get(g:, 'openvox_lint_command', 'puppet-lint')
+  let l:args = [l:cmd]
+
+  " Output format for parsing: filename:line:column:KIND:check:message
+  call add(l:args, '--log-format')
+  call add(l:args, '%{path}:%{line}:%{column}:%{KIND}:%{check}:%{message}')
+
+  " Add user-configured arguments
+  let l:extra = get(g:, 'openvox_lint_args', [])
+  if type(l:extra) == v:t_list
+    let l:args += l:extra
+  endif
+
+  " Disabled checks
+  let l:disabled = get(g:, 'openvox_lint_disabled_checks', [])
+  for l:check in l:disabled
+    call add(l:args, '--no-' . l:check . '-check')
+  endfor
+
+  call add(l:args, l:file)
+
+  echon 'puppet-lint: checking ' . fnamemodify(l:file, ':t') . '...'
+
+  let s:lint_job = job_start(l:args, {
+        \ 'out_cb':   function('s:on_stdout'),
+        \ 'err_cb':   function('s:on_stderr'),
+        \ 'exit_cb':  function('s:on_exit'),
+        \ 'out_mode': 'nl',
+        \ 'err_mode': 'nl',
+        \ 'in_io':    'null',
+        \ })
+endfunction
+
+function! openvox#lint#fix() abort
+  let l:file = expand('%:p')
+  if empty(l:file) || !filereadable(l:file)
+    echohl WarningMsg | echo 'puppet-lint: No file to fix' | echohl None
+    return
+  endif
+
+  if &modified
+    write
+  endif
+
+  call s:kill_job()
+
+  let s:lint_output = []
+  let s:lint_errors = []
+  let s:lint_type = 'puppet-lint-fix'
+
+  let l:cmd = get(g:, 'openvox_lint_command', 'puppet-lint')
+  let l:args = [l:cmd, '--fix', l:file]
+
+  echo 'puppet-lint: fixing ' . fnamemodify(l:file, ':t') . '...'
+
+  let s:lint_job = job_start(l:args, {
+        \ 'out_cb':   function('s:on_stdout'),
+        \ 'err_cb':   function('s:on_stderr'),
+        \ 'exit_cb':  function('s:on_fix_exit'),
+        \ 'out_mode': 'nl',
+        \ 'err_mode': 'nl',
+        \ 'in_io':    'null',
+        \ })
+endfunction
+
+" ─── puppet validate (syntax check) ──────────────────────────────
+
+function! openvox#lint#validate() abort
+  let l:file = expand('%:p')
+  if empty(l:file) || !filereadable(l:file)
+    echohl WarningMsg | echo 'puppet: No file to validate' | echohl None
+    return
+  endif
+
+  if &modified
+    write
+  endif
+
+  call s:kill_job()
+
+  let s:lint_output = []
+  let s:lint_errors = []
+  let s:lint_type = 'puppet-validate'
+
+  let l:puppet_cmd = get(g:, 'openvox_puppet_command', 'puppet')
+  let l:args = [l:puppet_cmd, 'parser', 'validate', l:file]
+
+  echon 'puppet: validating ' . fnamemodify(l:file, ':t') . '...'
+
+  let s:lint_job = job_start(l:args, {
+        \ 'out_cb':   function('s:on_stdout'),
+        \ 'err_cb':   function('s:on_stderr'),
+        \ 'exit_cb':  function('s:on_exit'),
+        \ 'out_mode': 'nl',
+        \ 'err_mode': 'nl',
+        \ 'in_io':    'null',
+        \ })
+endfunction
+
+" ─── metadata-json-lint ───────────────────────────────────────────
+
+function! openvox#lint#metadata() abort
+  let l:file = expand('%:p')
+  if fnamemodify(l:file, ':t') !=# 'metadata.json'
+    echohl WarningMsg | echo 'metadata-json-lint: Not a metadata.json file' | echohl None
+    return
+  endif
+
+  if &modified
+    write
+  endif
+
+  call s:kill_job()
+
+  let s:lint_output = []
+  let s:lint_errors = []
+  let s:lint_type = 'metadata-json-lint'
+
+  let l:cmd = get(g:, 'openvox_metadata_lint_command', 'metadata-json-lint')
+  let l:args = [l:cmd]
+
+  " Add user-configured arguments
+  let l:extra = get(g:, 'openvox_metadata_lint_args', [])
+  if type(l:extra) == v:t_list
+    let l:args += l:extra
+  endif
+
+  call add(l:args, l:file)
+
+  echon 'metadata-json-lint: checking ' . fnamemodify(l:file, ':t') . '...'
+
+  let s:lint_job = job_start(l:args, {
+        \ 'out_cb':   function('s:on_stdout'),
+        \ 'err_cb':   function('s:on_stderr'),
+        \ 'exit_cb':  function('s:on_metadata_exit'),
+        \ 'out_mode': 'nl',
+        \ 'err_mode': 'nl',
+        \ 'in_io':    'null',
+        \ })
+endfunction
+
+" ─── yamllint ─────────────────────────────────────────────────────
+
+function! openvox#lint#yaml() abort
+  let l:file = expand('%:p')
+  if empty(l:file) || !filereadable(l:file)
+    echohl WarningMsg | echo 'yamllint: No file to lint' | echohl None
+    return
+  endif
+
+  if &modified
+    write
+  endif
+
+  call s:kill_job()
+
+  let s:lint_output = []
+  let s:lint_errors = []
+  let s:lint_type = 'yamllint'
+
+  let l:cmd = get(g:, 'openvox_yamllint_command', 'yamllint')
+  let l:args = [l:cmd]
+
+  " Use parsable format for quickfix
+  call add(l:args, '-f')
+  call add(l:args, 'parsable')
+
+  " Add user-configured arguments (e.g., -c config file)
+  let l:extra = get(g:, 'openvox_yamllint_args', [])
+  if type(l:extra) == v:t_list
+    let l:args += l:extra
+  endif
+
+  call add(l:args, l:file)
+
+  echon 'yamllint: checking ' . fnamemodify(l:file, ':t') . '...'
+
+  let s:lint_job = job_start(l:args, {
+        \ 'out_cb':   function('s:on_stdout'),
+        \ 'err_cb':   function('s:on_stderr'),
+        \ 'exit_cb':  function('s:on_yaml_exit'),
+        \ 'out_mode': 'nl',
+        \ 'err_mode': 'nl',
+        \ 'in_io':    'null',
+        \ })
+endfunction
+
+" ─── Auto-lint on save ────────────────────────────────────────────
+
+function! openvox#lint#auto() abort
+  let l:ft = &filetype
+  if l:ft ==# 'puppet'
+    call openvox#lint#run()
+  elseif l:ft =~# 'puppet_metadata'
+    call openvox#lint#metadata()
+  elseif l:ft =~# 'puppet_hiera' || l:ft ==# 'yaml'
+    call openvox#lint#yaml()
+  endif
+endfunction
+
+" ─── Callbacks ────────────────────────────────────────────────────
+
+function! s:on_stdout(channel, msg) abort
+  if !empty(a:msg)
+    call add(s:lint_output, a:msg)
+  endif
+endfunction
+
+function! s:on_stderr(channel, msg) abort
+  if !empty(a:msg)
+    call add(s:lint_errors, a:msg)
+  endif
+endfunction
+
+function! s:on_exit(job, exit_code) abort
+  let s:lint_job = v:null
+
+  if s:lint_type ==# 'puppet-lint'
+    call s:parse_puppet_lint(a:exit_code)
+  elseif s:lint_type ==# 'puppet-validate'
+    call s:parse_puppet_validate(a:exit_code)
+  endif
+endfunction
+
+function! s:on_fix_exit(job, exit_code) abort
+  let s:lint_job = v:null
+  if a:exit_code == 0
+    " Reload the file after fixes
+    edit
+    echohl MoreMsg | echo 'puppet-lint: fixes applied' | echohl None
+    " Run lint again to show remaining issues
+    call openvox#lint#run()
+  else
+    echohl ErrorMsg | echo 'puppet-lint --fix failed' | echohl None
+    for l:line in s:lint_errors
+      echohl ErrorMsg | echo '  ' . l:line | echohl None
+    endfor
+  endif
+endfunction
+
+function! s:on_metadata_exit(job, exit_code) abort
+  let s:lint_job = v:null
+  call s:parse_metadata_lint(a:exit_code)
+endfunction
+
+function! s:on_yaml_exit(job, exit_code) abort
+  let s:lint_job = v:null
+  call s:parse_yamllint(a:exit_code)
+endfunction
+
+" ─── Parsers ──────────────────────────────────────────────────────
+
+function! s:parse_puppet_lint(exit_code) abort
+  let l:qflist = []
+
+  for l:line in s:lint_output
+    " Format: path:line:column:KIND:check:message
+    let l:parts = split(l:line, ':')
+    if len(l:parts) >= 6
+      let l:filename = l:parts[0]
+      let l:lnum = str2nr(l:parts[1])
+      let l:col = str2nr(l:parts[2])
+      let l:kind = l:parts[3]
+      let l:check = l:parts[4]
+      let l:message = join(l:parts[5:], ':')
+      call add(l:qflist, {
+            \ 'filename': l:filename,
+            \ 'lnum':     l:lnum,
+            \ 'col':      l:col,
+            \ 'type':     l:kind ==# 'ERROR' ? 'E' : 'W',
+            \ 'text':     '[' . l:check . '] ' . l:message,
+            \ })
+    endif
+  endfor
+
+  call setqflist(l:qflist)
+
+  if empty(l:qflist)
+    echohl MoreMsg | echo 'puppet-lint: no issues found ✓' | echohl None
+    cclose
+  else
+    echohl WarningMsg
+    echo printf('puppet-lint: %d issue(s) found', len(l:qflist))
+    echohl None
+    botright copen
+  endif
+endfunction
+
+function! s:parse_puppet_validate(exit_code) abort
+  let l:qflist = []
+
+  for l:line in s:lint_output + s:lint_errors
+    " Puppet parser validate output format varies, try common patterns
+    " Error: Could not parse ... at file.pp:10:5
+    let l:match = matchlist(l:line, '\(Error\|Warning\):\s*\(.*\)\s\+at\s\+\(\S\+\):\(\d\+\):\?\(\d*\)')
+    if !empty(l:match)
+      call add(l:qflist, {
+            \ 'filename': l:match[3],
+            \ 'lnum':     str2nr(l:match[4]),
+            \ 'col':      empty(l:match[5]) ? 0 : str2nr(l:match[5]),
+            \ 'type':     l:match[1] ==# 'Error' ? 'E' : 'W',
+            \ 'text':     l:match[2],
+            \ })
+      continue
+    endif
+    " Alternative format: Error: message (file: path, line: N, column: N)
+    let l:match = matchlist(l:line, '\(Error\|Warning\):\s*\(.\{-}\)\s*(file:\s*\(\S\+\),\s*line:\s*\(\d\+\)')
+    if !empty(l:match)
+      call add(l:qflist, {
+            \ 'filename': l:match[3],
+            \ 'lnum':     str2nr(l:match[4]),
+            \ 'type':     l:match[1] ==# 'Error' ? 'E' : 'W',
+            \ 'text':     l:match[2],
+            \ })
+    endif
+  endfor
+
+  call setqflist(l:qflist)
+
+  if a:exit_code == 0 && empty(l:qflist)
+    echohl MoreMsg | echo 'puppet validate: syntax OK ✓' | echohl None
+    cclose
+  else
+    echohl ErrorMsg
+    echo printf('puppet validate: %d error(s) found', len(l:qflist))
+    echohl None
+    if !empty(l:qflist)
+      botright copen
+    endif
+  endif
+endfunction
+
+function! s:parse_metadata_lint(exit_code) abort
+  let l:qflist = []
+  let l:file = expand('%:p')
+
+  for l:line in s:lint_output + s:lint_errors
+    " metadata-json-lint outputs lines like:
+    " Error: ... or Warning: ...
+    let l:type = 'W'
+    if l:line =~# '^Error'
+      let l:type = 'E'
+    endif
+    if l:line =~# '^\(Error\|Warning\):'
+      let l:msg = substitute(l:line, '^\(Error\|Warning\):\s*', '', '')
+      call add(l:qflist, {
+            \ 'filename': l:file,
+            \ 'lnum':     1,
+            \ 'type':     l:type,
+            \ 'text':     l:msg,
+            \ })
+    endif
+  endfor
+
+  call setqflist(l:qflist)
+
+  if empty(l:qflist) && a:exit_code == 0
+    echohl MoreMsg | echo 'metadata-json-lint: no issues found ✓' | echohl None
+    cclose
+  else
+    echohl WarningMsg
+    echo printf('metadata-json-lint: %d issue(s) found', len(l:qflist))
+    echohl None
+    if !empty(l:qflist)
+      botright copen
+    endif
+  endif
+endfunction
+
+function! s:parse_yamllint(exit_code) abort
+  let l:qflist = []
+
+  for l:line in s:lint_output
+    " yamllint -f parsable format: file:line:col: [level] message
+    let l:match = matchlist(l:line, '\(.\{-}\):\(\d\+\):\(\d\+\):\s*\[\(\w\+\)\]\s*\(.*\)')
+    if !empty(l:match)
+      call add(l:qflist, {
+            \ 'filename': l:match[1],
+            \ 'lnum':     str2nr(l:match[2]),
+            \ 'col':      str2nr(l:match[3]),
+            \ 'type':     l:match[4] ==# 'error' ? 'E' : 'W',
+            \ 'text':     l:match[5],
+            \ })
+    endif
+  endfor
+
+  call setqflist(l:qflist)
+
+  if empty(l:qflist) && a:exit_code == 0
+    echohl MoreMsg | echo 'yamllint: no issues found ✓' | echohl None
+    cclose
+  else
+    echohl WarningMsg
+    echo printf('yamllint: %d issue(s) found', len(l:qflist))
+    echohl None
+    if !empty(l:qflist)
+      botright copen
+    endif
+  endif
+endfunction
+
+" ─── Helpers ──────────────────────────────────────────────────────
+
+function! s:kill_job() abort
+  if s:lint_job isnot v:null && job_status(s:lint_job) ==# 'run'
+    call job_stop(s:lint_job, 'kill')
+  endif
+  let s:lint_job = v:null
+endfunction

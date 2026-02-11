@@ -1,0 +1,404 @@
+*openvox.txt*  Puppet 8 IDE plugin for Vim
+
+Author:  xAI
+License: Apache-2.0
+Version: 1.0.0
+
+==============================================================================
+CONTENTS                                                   *openvox-contents*
+
+    1. Introduction .............. |openvox-introduction|
+    2. Installation .............. |openvox-installation|
+    3. Commands .................. |openvox-commands|
+    4. Mappings .................. |openvox-mappings|
+    5. Configuration ............. |openvox-configuration|
+    6. Linting ................... |openvox-linting|
+    7. Arrow Alignment ........... |openvox-alignment|
+    8. Completion ................ |openvox-completion|
+    9. Navigation ................ |openvox-navigation|
+   10. Snippets .................. |openvox-snippets|
+   11. Filetype Detection ........ |openvox-filetypes|
+   12. Style Guide ............... |openvox-styleguide|
+   13. Replacing Other Plugins ... |openvox-replacing|
+   14. FAQ ....................... |openvox-faq|
+
+==============================================================================
+1. INTRODUCTION                                         *openvox-introduction*
+
+openvox.vim is a comprehensive Puppet IDE plugin for Vim that provides:
+
+  - Full Puppet 8 syntax highlighting (resource types, functions, data types,
+    operators, heredocs, interpolation, EPP templates)
+  - Style-guide-compliant indentation (2-space soft tabs, arrow alignment)
+  - Async linting via puppet-lint, metadata-json-lint, and yamllint
+  - Context-aware omni-completion (Ctrl-X Ctrl-O)
+  - Code navigation (go-to-definition, block jumping)
+  - Boilerplate generation for classes, defined types, and modules
+  - Browser-based documentation lookup
+  - Compiler integration (:make support)
+  - EPP template support with host-language syntax detection
+
+It is designed to replace multiple Puppet-related plugins with a single,
+cohesive solution following the official Puppet Style Guide:
+https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm
+
+==============================================================================
+2. INSTALLATION                                         *openvox-installation*
+
+Using Pathogen: >
+    cd ~/.vim/bundle
+    git clone https://github.com/cvquesty/openvox.vim.git
+<
+Using vim-plug: >
+    Plug 'cvquesty/openvox.vim'
+<
+Using Vundle: >
+    Plugin 'cvquesty/openvox.vim'
+<
+Using native packages (Vim 8+): >
+    mkdir -p ~/.vim/pack/plugins/start
+    cd ~/.vim/pack/plugins/start
+    git clone https://github.com/cvquesty/openvox.vim.git
+<
+Requirements:~
+  - Vim 8.0+ (for async job support)
+  - puppet-lint (for .pp linting)
+  - metadata-json-lint (for metadata.json validation)
+  - yamllint (for Hiera YAML linting)
+
+Install linters: >
+    gem install puppet-lint metadata-json-lint
+    pip install yamllint
+<
+==============================================================================
+3. COMMANDS                                               *openvox-commands*
+
+Linting commands:~
+
+*:OpenvoxLint*       Run puppet-lint on the current .pp file asynchronously.
+                   Results populate the quickfix list.
+
+*:OpenvoxLintFix*    Run puppet-lint --fix to auto-fix issues, then re-lint.
+
+*:OpenvoxValidate*   Run `puppet parser validate` for syntax checking.
+
+*:OpenvoxMetadataLint*  Run metadata-json-lint on the current metadata.json.
+
+*:OpenvoxYamlLint*   Run yamllint on the current YAML file.
+
+Alignment commands:~
+
+*:OpenvoxAlign*      Align `=>` arrows in the selected range (visual mode).
+
+*:OpenvoxAlignBlock* Align `=>` arrows in the enclosing resource block.
+
+Navigation commands:~
+
+*:OpenvoxGotoDef*    Jump to the class/define definition under the cursor.
+
+*:OpenvoxDoc*        Open Puppet documentation for the word under cursor.
+
+Snippet commands:~
+
+*:OpenvoxClass* {name}  Insert a class boilerplate with Puppet Strings docs.
+
+*:OpenvoxDefine* {name} Insert a defined type boilerplate.
+
+*:OpenvoxInit*       Insert a module init.pp boilerplate (auto-detects name).
+
+==============================================================================
+4. MAPPINGS                                               *openvox-mappings*
+
+These mappings are set buffer-locally for Puppet files. Disable with
+|g:openvox_no_mappings|.
+
+Normal mode:~
+  <LocalLeader>l     Run puppet-lint (same as |:OpenvoxLint|)
+  <LocalLeader>v     Validate syntax (same as |:OpenvoxValidate|)
+  <LocalLeader>f     Auto-fix lint issues (same as |:OpenvoxLintFix|)
+  gd                 Go to definition of class/define under cursor
+  K                  Look up documentation for word under cursor
+  [[                 Jump to previous class/define/node block
+  ]]                 Jump to next class/define/node block
+
+Visual mode:~
+  <LocalLeader>a     Align `=>` arrows in selection
+
+==============================================================================
+5. CONFIGURATION                                       *openvox-configuration*
+
+                                                   *g:openvox_lint_command*
+g:openvox_lint_command ~
+  Path to puppet-lint executable. Default: 'puppet-lint'
+
+                                                   *g:openvox_puppet_command*
+g:openvox_puppet_command ~
+  Path to puppet executable. Default: 'puppet'
+
+                                                   *g:openvox_metadata_lint_command*
+g:openvox_metadata_lint_command ~
+  Path to metadata-json-lint. Default: 'metadata-json-lint'
+
+                                                   *g:openvox_yamllint_command*
+g:openvox_yamllint_command ~
+  Path to yamllint executable. Default: 'yamllint'
+
+                                                   *g:openvox_max_line_length*
+g:openvox_max_line_length ~
+  Maximum line length. Sets 'textwidth' and 'colorcolumn'.
+  Default: 140 (per puppet-lint 140chars check)
+
+                                                   *g:openvox_fold*
+g:openvox_fold ~
+  Enable code folding by indent level. Default: 1 (enabled)
+
+                                                   *g:openvox_no_mappings*
+g:openvox_no_mappings ~
+  Disable all default key mappings. Default: 0 (mappings enabled)
+
+                                                   *g:openvox_auto_lint*
+g:openvox_auto_lint ~
+  Automatically run the appropriate linter on save. Default: 1
+
+                                                   *g:openvox_lint_args*
+g:openvox_lint_args ~
+  Extra arguments to pass to puppet-lint. List of strings.
+  Default: [] >
+    let g:openvox_lint_args = ['--relative']
+<
+                                                   *g:openvox_lint_disabled_checks*
+g:openvox_lint_disabled_checks ~
+  List of puppet-lint checks to disable. Default: [] >
+    let g:openvox_lint_disabled_checks = ['80chars', 'documentation']
+<
+                                                   *g:openvox_metadata_lint_args*
+g:openvox_metadata_lint_args ~
+  Extra arguments for metadata-json-lint. Default: []
+
+                                                   *g:openvox_yamllint_args*
+g:openvox_yamllint_args ~
+  Extra arguments for yamllint. Default: [] >
+    let g:openvox_yamllint_args = ['-c', '~/.yamllint.yml']
+<
+Example .vimrc configuration: >
+    let g:openvox_auto_lint = 1
+    let g:openvox_max_line_length = 140
+    let g:openvox_lint_disabled_checks = ['80chars']
+    let g:openvox_yamllint_args = ['-c', '~/.yamllint.yml']
+<
+==============================================================================
+6. LINTING                                                 *openvox-linting*
+
+openvox.vim integrates three linters that run asynchronously:
+
+puppet-lint~
+  Checks .pp manifests against the Puppet Style Guide. Runs automatically
+  on save (see |g:openvox_auto_lint|). All 39+ puppet-lint checks are
+  supported. The full list of checks:
+
+    arrow_alignment, autoloader_layout, case_without_default,
+    class_inherits_from_params_class, documentation,
+    double_quoted_strings, duplicate_params, ensure_first_param,
+    ensure_not_symlink_target, file_mode, hard_tabs,
+    inherits_across_namespaces, legacy_facts, names_containing_dash,
+    names_containing_uppercase, nested_classes_or_defines,
+    only_variable_string, parameter_order, puppet_url_without_modules,
+    quoted_booleans, right_to_left_relationship,
+    selector_inside_resource, single_quote_string_with_variables,
+    slash_comments, star_comments, top_scope_facts,
+    trailing_whitespace, unquoted_file_mode, unquoted_node_name,
+    unquoted_resource_title, variable_contains_dash,
+    variable_is_lowercase, variable_scope, variables_not_enclosed,
+    140chars, 2sp_soft_tabs, arrow_on_right_operand_line,
+    code_on_top_scope, nested_classes_or_defines
+
+  Disable individual checks with |g:openvox_lint_disabled_checks|.
+
+metadata-json-lint~
+  Validates Puppet module metadata.json files. Checks:
+    - Required fields (name, version, author, license, summary, source)
+    - Dependency version ranges
+    - Duplicate dependencies
+    - Operating system support format
+    - Valid SPDX license identifiers
+
+yamllint~
+  Validates Hiera data YAML files. Checks:
+    - YAML syntax errors
+    - Indentation consistency
+    - Line length
+    - Trailing spaces
+    - Document markers
+    - Truthy values
+
+All linters populate the quickfix list. Use :copen, :cnext, :cprev to
+navigate issues.
+
+==============================================================================
+7. ARROW ALIGNMENT                                       *openvox-alignment*
+
+The Puppet Style Guide requires that `=>` arrows be aligned within a
+resource body: >
+
+    file { '/etc/foo':
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0644',
+      content => template('module/foo.erb'),
+    }
+<
+Use |:OpenvoxAlign| in visual mode or |:OpenvoxAlignBlock| in normal mode
+to automatically align arrows. The <LocalLeader>a mapping is available
+in visual mode.
+
+==============================================================================
+8. COMPLETION                                           *openvox-completion*
+
+openvox.vim provides context-aware omni-completion (Ctrl-X Ctrl-O):
+
+  - Inside a resource body → resource-specific attributes
+  - After `ensure =>` → valid ensure values for that resource type
+  - Starting with `$` → variables found in the current buffer
+  - Starting with uppercase → Puppet data types
+  - General context → resource types, functions, types, keywords
+
+Supported resource types include all Puppet 8 built-ins plus common
+module types (stdlib, concat, firewall, apt, vcsrepo, etc.).
+
+Supported functions include all 90+ Puppet 8 built-in functions plus
+commonly used stdlib functions.
+
+==============================================================================
+9. NAVIGATION                                           *openvox-navigation*
+
+  gd     Go to the definition of the class or defined type under the
+         cursor. Searches module paths following Puppet's autoloader
+         layout convention:
+           module::class → module/manifests/class.pp
+
+  [[     Jump to the previous class/define/node declaration.
+
+  ]]     Jump to the next class/define/node declaration.
+
+==============================================================================
+10. SNIPPETS                                             *openvox-snippets*
+
+  :OpenvoxClass profile::web
+      Inserts a full class skeleton with Puppet Strings documentation.
+
+  :OpenvoxDefine profile::vhost
+      Inserts a defined type skeleton with documentation.
+
+  :OpenvoxInit
+      Inserts a complete init.pp with package/service management.
+      Auto-detects the module name from the file path.
+
+All generated code follows the Puppet Style Guide conventions:
+  - Puppet Strings documentation comments (@summary, @param, @example)
+  - Typed parameters with defaults
+  - Two-space indentation
+  - Proper brace placement
+
+==============================================================================
+11. FILETYPE DETECTION                                   *openvox-filetypes*
+
+openvox.vim detects the following file types:
+
+  *.pp                          puppet
+  *.epp                         epuppet (with host syntax detection)
+  Puppetfile                    ruby
+  */data/*.yaml, */data/*.yml   yaml.puppet_hiera
+  */hieradata/*.yaml            yaml.puppet_hiera
+  */metadata.json               json.puppet_metadata (if Puppet content)
+
+EPP templates automatically detect the host language from the filename:
+  foo.conf.epp → conf syntax + Puppet tags
+  foo.html.epp → HTML syntax + Puppet tags
+  foo.yaml.epp → YAML syntax + Puppet tags
+
+==============================================================================
+12. STYLE GUIDE                                         *openvox-styleguide*
+
+openvox.vim enforces the Puppet Style Guide throughout:
+
+Indentation:~
+  - Two-space soft tabs (expandtab, shiftwidth=2)
+  - No hard tabs
+
+Strings:~
+  - Single quotes for strings without interpolation
+  - Double quotes only when using variable interpolation
+  - Heredocs for multi-line strings
+
+Resources:~
+  - `ensure` as the first attribute
+  - Arrow alignment within resource bodies
+  - Metaparameters (before, require, etc.) at the end
+
+Conditionals:~
+  - Opening brace on the same line
+  - No right-to-left relationship arrows (<- or <~)
+
+Line Length:~
+  - 140-character maximum (puppet-lint default)
+  - Configurable via |g:openvox_max_line_length|
+
+Comments:~
+  - Hash (#) comments only (no C-style /* */ or //)
+
+Variables:~
+  - snake_case naming
+  - Namespace-qualified references ($module::variable)
+
+==============================================================================
+13. REPLACING OTHER PLUGINS                             *openvox-replacing*
+
+openvox.vim is designed to replace these plugins:
+
+  puppet-syntax-vim / vim-puppet (rodjek)
+      → Full syntax, indent, ftdetect, ftplugin replacement
+
+  vim-puppet-lint
+      → Async puppet-lint with quickfix integration
+
+  syntastic (puppet checker)
+      → Async puppet-lint and puppet validate
+
+  ALE (puppet linters)
+      → puppet-lint, metadata-json-lint, yamllint integration
+
+  tabular / vim-easy-align (for => only)
+      → Built-in arrow alignment
+
+To disable old plugins with Pathogen: >
+    let g:pathogen_disabled = ['puppet-syntax-vim', 'vim-puppet']
+<
+==============================================================================
+14. FAQ                                                       *openvox-faq*
+
+Q: How do I disable auto-linting on save?
+A: Set `let g:openvox_auto_lint = 0` in your .vimrc.
+
+Q: puppet-lint is not found. What do I do?
+A: Install it with `gem install puppet-lint` and ensure it's in your PATH.
+   Or set the full path: >
+   let g:openvox_lint_command = '/usr/local/bin/puppet-lint'
+<
+Q: How do I use a custom yamllint config for Hiera files?
+A: Set `let g:openvox_yamllint_args = ['-c', '/path/to/.yamllint.yml']`
+
+Q: Can I disable specific puppet-lint checks?
+A: Yes: `let g:openvox_lint_disabled_checks = ['80chars', 'documentation']`
+   You can also use a .puppet-lint.rc file in your project root.
+
+Q: How do I jump to a class defined in another module?
+A: Place your cursor on the class name and press `gd`. The plugin searches
+   common module path layouts (modules/, site/, site-modules/).
+
+Q: Why doesn't folding work?
+A: Ensure `g:openvox_fold` is set to 1 (default) and that you haven't set
+   foldmethod to something else in your .vimrc for Puppet files.
+
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
