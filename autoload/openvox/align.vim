@@ -12,39 +12,51 @@
 function! openvox#align#arrows() range abort
   let l:lines = getline(a:firstline, a:lastline)
   let l:max_key_len = 0
+  let l:arrow_count = 0
 
-  " First pass: find the longest key (text before =>)
+  " First pass: find the longest key name (text before =>).
+  " We match: leading whitespace, then the key (everything up to the
+  " first => that is preceded by optional whitespace). This handles
+  " keys like 'ensure', 'my-key', 'some_thing', and even keys with
+  " no space before => (e.g., 'ensure=>present').
   for l:line in l:lines
-    let l:match = matchlist(l:line, '^\(\s*\)\(\S\+\)\s*=>')
+    let l:match = matchlist(l:line, '^\(\s*\)\(\S.\{-}\)\s*=>')
     if !empty(l:match)
-      let l:key_len = len(l:match[1]) + len(l:match[2])
+      let l:key_len = len(l:match[2])
       if l:key_len > l:max_key_len
         let l:max_key_len = l:key_len
       endif
+      let l:arrow_count += 1
     endif
   endfor
 
-  if l:max_key_len == 0
+  if l:arrow_count == 0
     echo 'No arrows (=>) found in selection'
     return
   endif
 
-  " Second pass: align all => to max_key_len + 1 space
+  " Second pass: rewrite each line so => is aligned.
+  " The arrow column = indent + max_key_len + 1 space.
+  " Key length is measured relative to the indent, not absolute column.
   let l:lnum = a:firstline
   for l:line in l:lines
-    let l:match = matchlist(l:line, '^\(\s*\)\(\S\+\)\s*=>\s*\(.*\)')
+    let l:match = matchlist(l:line, '^\(\s*\)\(\S.\{-}\)\s*=>\s*\(.*\)')
     if !empty(l:match)
       let l:indent = l:match[1]
       let l:key = l:match[2]
       let l:value = l:match[3]
-      let l:padding = repeat(' ', l:max_key_len - len(l:indent) - len(l:key) + 1)
-      let l:new_line = l:indent . l:key . l:padding . '=> ' . l:value
+      " Padding = spaces needed after the key to reach the alignment column
+      let l:pad = l:max_key_len - len(l:key)
+      if l:pad < 0
+        let l:pad = 0
+      endif
+      let l:new_line = l:indent . l:key . repeat(' ', l:pad) . ' => ' . l:value
       call setline(l:lnum, l:new_line)
     endif
     let l:lnum += 1
   endfor
 
-  echo printf('Aligned %d arrows', a:lastline - a:firstline + 1)
+  echo printf('Aligned %d arrow(s)', l:arrow_count)
 endfunction
 
 " Auto-align: align arrows in the current resource block
