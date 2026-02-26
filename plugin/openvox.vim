@@ -72,6 +72,13 @@ if !exists('g:openvox_yamllint_args')
   let g:openvox_yamllint_args = []
 endif
 
+" Open quickfix window automatically on lint errors (default: off)
+" When off, errors display as a concise message on the command line.
+" The quickfix list is always populated — use :copen to see full details.
+if !exists('g:openvox_lint_open_quickfix')
+  let g:openvox_lint_open_quickfix = 0
+endif
+
 " ─── Commands ─────────────────────────────────────────────────────
 
 " Linting

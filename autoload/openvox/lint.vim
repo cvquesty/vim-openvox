@@ -287,6 +287,68 @@ function! s:on_yaml_exit(job, exit_code) abort
   call s:parse_yamllint(a:exit_code)
 endfunction
 
+" ─── Sign definitions ─────────────────────────────────────────────
+" Non-intrusive gutter markers for error/warning lines
+if !exists('s:signs_defined')
+  sign define openvox_error   text=>> texthl=ErrorMsg   linehl=
+  sign define openvox_warning text=>> texthl=WarningMsg linehl=
+  let s:signs_defined = 1
+endif
+
+" ─── Display helper ──────────────────────────────────────────────
+" Shows a concise one-line summary on the command line and places
+" >> signs in the gutter. The quickfix list is always populated so
+" :copen / :cnext / :cprev work when the user wants full details.
+
+function! s:display_results(tool, qflist) abort
+  " Clear previous signs for this buffer
+  execute 'sign unplace * buffer=' . bufnr('%')
+
+  " Place >> signs in the gutter on error/warning lines
+  let l:sign_id = 1000
+  for l:item in a:qflist
+    let l:sign_name = l:item.type ==# 'E' ? 'openvox_error' : 'openvox_warning'
+    let l:target_buf = bufnr(get(l:item, 'filename', expand('%:p')))
+    if l:target_buf == -1
+      let l:target_buf = bufnr('%')
+    endif
+    execute printf('sign place %d line=%d name=%s buffer=%d',
+          \ l:sign_id, l:item.lnum, l:sign_name, l:target_buf)
+    let l:sign_id += 1
+  endfor
+
+  if empty(a:qflist)
+    echohl MoreMsg | echon a:tool . ': no issues ✓' | echohl None
+    return
+  endif
+
+  " Build concise summary: "tool: 1E 3W | L12: [check] message"
+  let l:first = a:qflist[0]
+  let l:errors = len(filter(copy(a:qflist), 'v:val.type ==# "E"'))
+  let l:warnings = len(a:qflist) - l:errors
+
+  let l:counts = []
+  if l:errors > 0   | call add(l:counts, l:errors . 'E')   | endif
+  if l:warnings > 0  | call add(l:counts, l:warnings . 'W') | endif
+
+  let l:summary = a:tool . ': ' . join(l:counts, ' ')
+        \ . ' | L' . l:first.lnum . ': ' . l:first.text
+
+  " Truncate to avoid "Press ENTER" prompt
+  let l:maxwidth = &columns - 1
+  if len(l:summary) > l:maxwidth
+    let l:summary = l:summary[:l:maxwidth - 4] . '...'
+  endif
+
+  let l:hl = l:errors > 0 ? 'ErrorMsg' : 'WarningMsg'
+  execute 'echohl ' . l:hl | echon l:summary | echohl None
+
+  " Optionally open the quickfix window (off by default)
+  if get(g:, 'openvox_lint_open_quickfix', 0)
+    botright copen
+  endif
+endfunction
+
 " ─── Parsers ──────────────────────────────────────────────────────
 
 function! s:parse_puppet_lint(exit_code) abort
@@ -313,24 +375,13 @@ function! s:parse_puppet_lint(exit_code) abort
   endfor
 
   call setqflist(l:qflist)
-
-  if empty(l:qflist)
-    echohl MoreMsg | echo 'puppet-lint: no issues found ✓' | echohl None
-    cclose
-  else
-    echohl WarningMsg
-    echo printf('puppet-lint: %d issue(s) found', len(l:qflist))
-    echohl None
-    botright copen
-  endif
+  call s:display_results('puppet-lint', l:qflist)
 endfunction
 
 function! s:parse_puppet_validate(exit_code) abort
   let l:qflist = []
 
   for l:line in s:lint_output + s:lint_errors
-    " Puppet parser validate output format varies, try common patterns
-    " Error: Could not parse ... at file.pp:10:5
     let l:match = matchlist(l:line, '\(Error\|Warning\):\s*\(.*\)\s\+at\s\+\(\S\+\):\(\d\+\):\?\(\d*\)')
     if !empty(l:match)
       call add(l:qflist, {
@@ -342,7 +393,6 @@ function! s:parse_puppet_validate(exit_code) abort
             \ })
       continue
     endif
-    " Alternative format: Error: message (file: path, line: N, column: N)
     let l:match = matchlist(l:line, '\(Error\|Warning\):\s*\(.\{-}\)\s*(file:\s*\(\S\+\),\s*line:\s*\(\d\+\)')
     if !empty(l:match)
       call add(l:qflist, {
@@ -355,18 +405,7 @@ function! s:parse_puppet_validate(exit_code) abort
   endfor
 
   call setqflist(l:qflist)
-
-  if a:exit_code == 0 && empty(l:qflist)
-    echohl MoreMsg | echo 'puppet validate: syntax OK ✓' | echohl None
-    cclose
-  else
-    echohl ErrorMsg
-    echo printf('puppet validate: %d error(s) found', len(l:qflist))
-    echohl None
-    if !empty(l:qflist)
-      botright copen
-    endif
-  endif
+  call s:display_results('puppet-validate', l:qflist)
 endfunction
 
 function! s:parse_metadata_lint(exit_code) abort
@@ -374,8 +413,6 @@ function! s:parse_metadata_lint(exit_code) abort
   let l:file = expand('%:p')
 
   for l:line in s:lint_output + s:lint_errors
-    " metadata-json-lint outputs lines like:
-    " Error: ... or Warning: ...
     let l:type = 'W'
     if l:line =~# '^Error'
       let l:type = 'E'
@@ -392,25 +429,13 @@ function! s:parse_metadata_lint(exit_code) abort
   endfor
 
   call setqflist(l:qflist)
-
-  if empty(l:qflist) && a:exit_code == 0
-    echohl MoreMsg | echo 'metadata-json-lint: no issues found ✓' | echohl None
-    cclose
-  else
-    echohl WarningMsg
-    echo printf('metadata-json-lint: %d issue(s) found', len(l:qflist))
-    echohl None
-    if !empty(l:qflist)
-      botright copen
-    endif
-  endif
+  call s:display_results('metadata-json-lint', l:qflist)
 endfunction
 
 function! s:parse_yamllint(exit_code) abort
   let l:qflist = []
 
   for l:line in s:lint_output
-    " yamllint -f parsable format: file:line:col: [level] message
     let l:match = matchlist(l:line, '\(.\{-}\):\(\d\+\):\(\d\+\):\s*\[\(\w\+\)\]\s*\(.*\)')
     if !empty(l:match)
       call add(l:qflist, {
@@ -424,18 +449,7 @@ function! s:parse_yamllint(exit_code) abort
   endfor
 
   call setqflist(l:qflist)
-
-  if empty(l:qflist) && a:exit_code == 0
-    echohl MoreMsg | echo 'yamllint: no issues found ✓' | echohl None
-    cclose
-  else
-    echohl WarningMsg
-    echo printf('yamllint: %d issue(s) found', len(l:qflist))
-    echohl None
-    if !empty(l:qflist)
-      botright copen
-    endif
-  endif
+  call s:display_results('yamllint', l:qflist)
 endfunction
 
 " ─── Helpers ──────────────────────────────────────────────────────
