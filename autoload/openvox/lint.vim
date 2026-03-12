@@ -37,7 +37,7 @@ function! openvox#lint#run(...) abort
   let s:lint_errors = []
   let s:lint_type = 'puppet-lint'
 
-  let l:cmd = get(g:, 'openvox_lint_command', 'puppet-lint')
+  let l:cmd = get(g:, 'openvox_lint_command', 'openvox-lint')
   let l:args = [l:cmd]
 
   " Output format for parsing: filename:line:column:KIND:check:message
@@ -87,7 +87,7 @@ function! openvox#lint#fix() abort
   let s:lint_errors = []
   let s:lint_type = 'puppet-lint-fix'
 
-  let l:cmd = get(g:, 'openvox_lint_command', 'puppet-lint')
+  let l:cmd = get(g:, 'openvox_lint_command', 'openvox-lint')
   let l:args = [l:cmd, '--fix', l:file]
 
   echo 'puppet-lint: fixing ' . fnamemodify(l:file, ':t') . '...'

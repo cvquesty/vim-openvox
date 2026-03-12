@@ -2,7 +2,7 @@
 
 A comprehensive Puppet 8 IDE plugin for Vim. Replaces multiple Puppet-related
 plugins with a single, cohesive solution built around the official
-[Puppet Style Guide](https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm).
+[Puppet Style Guide](https://help.puppet.com/core/current/Content/PuppetCore/style_guide.htm).
 
 ## Features
 
@@ -10,7 +10,7 @@ plugins with a single, cohesive solution built around the official
 |---------|-------------|
 | **Syntax Highlighting** | Full Puppet 8 language — resource types, 90+ built-in functions, data types, heredocs, string interpolation, regex, operators, EPP templates |
 | **Indentation** | Style-guide-compliant 2-space soft tabs with smart block indentation |
-| **puppet-lint** | Async linting with all 39+ checks, quickfix integration, auto-fix support |
+| **openvox-lint** | Async linting with all 37 checks, quickfix integration, auto-fix support |
 | **metadata-json-lint** | Validates module `metadata.json` files |
 | **yamllint** | Lints Hiera YAML data files |
 | **Omni-completion** | Context-aware completion for types, attributes, functions, variables, ensure values |
@@ -26,7 +26,8 @@ plugins with a single, cohesive solution built around the official
 ## Requirements
 
 - **Vim 8.0+** (async job support)
-- [puppet-lint](https://puppetlabs.github.io/puppet-lint/) — `gem install puppet-lint`
+- [openvox-lint](https://github.com/cvquesty/openvox-lint) — `gem install openvox-lint` (preferred)
+- [puppet-lint](https://puppetlabs.github.io/puppet-lint/) — `gem install puppet-lint` (also supported)
 - [metadata-json-lint](https://github.com/voxpupuli/metadata-json-lint) — `gem install metadata-json-lint`
 - [yamllint](https://github.com/adrienverge/yamllint) — `pip install yamllint`
 
@@ -103,7 +104,8 @@ let g:openvox_lint_disabled_checks = ['80chars', 'documentation']
 let g:openvox_yamllint_args = ['-c', '~/.yamllint.yml']
 
 " Custom linter paths (if not in $PATH)
-let g:openvox_lint_command = '/usr/local/bin/puppet-lint'
+" Default is openvox-lint; puppet-lint also supported
+let g:openvox_lint_command = '/usr/local/bin/openvox-lint'
 let g:openvox_puppet_command = '/opt/puppetlabs/bin/puppet'
 
 " Disable auto-mappings
@@ -133,7 +135,7 @@ let g:pathogen_disabled = ['puppet-syntax-vim', 'vim-puppet']
 ## Style Guide Compliance
 
 Every feature is built around the
-[Puppet Style Guide](https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm):
+[Puppet Style Guide](https://help.puppet.com/core/current/Content/PuppetCore/style_guide.htm):
 
 - **Indentation:** 2-space soft tabs, no hard tabs
 - **Strings:** Single quotes preferred; double quotes only for interpolation
