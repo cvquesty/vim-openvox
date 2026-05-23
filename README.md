@@ -1,8 +1,27 @@
-# vim-openvox
+<div align="center">
 
-A comprehensive Puppet 8 IDE plugin for Vim. Replaces multiple Puppet-related
-plugins with a single, cohesive solution built around the official
-[Puppet Style Guide](https://help.puppet.com/core/current/Content/PuppetCore/style_guide.htm).
+# 🦊 vim-openvox
+
+**A comprehensive Vim plugin for OpenVox and Puppet 8+ development**
+
+[![Version](https://img.shields.io/badge/version-1.0.0--rc1-orange?style=for-the-badge)](https://github.com/cvquesty/vim-openvox/releases)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=for-the-badge)](LICENSE)
+[![Vim](https://img.shields.io/badge/Vim-8.0+-019833?style=for-the-badge&logo=vim&logoColor=white)](https://www.vim.org)
+[![Neovim](https://img.shields.io/badge/Neovim-0.5+-57A143?style=for-the-badge&logo=neovim&logoColor=white)](https://neovim.io)
+[![Language](https://img.shields.io/badge/language-Vim%20Script-019833?style=for-the-badge)](https://www.vim.org)
+
+[![GitHub Stars](https://img.shields.io/github/stars/cvquesty/vim-openvox?style=flat-square)](https://github.com/cvquesty/vim-openvox/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/cvquesty/vim-openvox?style=flat-square)](https://github.com/cvquesty/vim-openvox/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/cvquesty/vim-openvox?style=flat-square)](https://github.com/cvquesty/vim-openvox/commits/development)
+[![CI](https://img.shields.io/github/actions/workflow/status/cvquesty/vim-openvox/ci.yml?style=flat-square)](https://github.com/cvquesty/vim-openvox/actions)
+
+[Features](#features) · [Installation](#installation) · [Documentation](doc/openvox.txt) · [Contributing](CONTRIBUTING.md)
+
+</div>
+
+---
+
+A comprehensive Vim plugin for OpenVox and Puppet 8+ development, built around the official [Puppet Style Guide](https://help.puppet.com/core/current/Content/PuppetCore/style_guide.htm).
 
 ## Features
 

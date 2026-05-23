@@ -1,4 +1,5 @@
 " autoload/openvox/snippets.vim — Boilerplate code generation
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "

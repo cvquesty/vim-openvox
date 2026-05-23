@@ -1,0 +1,9 @@
+# Vint configuration for vim-openvox
+cmdargs:
+  max_line_length: 200   # Allow our nice section header comments
+
+rules:
+  ProhibitUnusedVariable:
+    enabled: true
+  ProhibitImplicitScopeVariable:
+    enabled: true

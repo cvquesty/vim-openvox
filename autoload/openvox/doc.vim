@@ -1,4 +1,5 @@
 " autoload/openvox/doc.vim — Documentation lookup for Puppet types/functions
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "

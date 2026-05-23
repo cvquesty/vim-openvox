@@ -1,4 +1,5 @@
 " compiler/openvox.vim — puppet parser validate compiler integration
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 

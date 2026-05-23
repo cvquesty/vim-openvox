@@ -1,4 +1,5 @@
 " syntax/puppet.vim — Puppet 8 syntax highlighting
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 " Based on the Puppet 8 language specification and style guide

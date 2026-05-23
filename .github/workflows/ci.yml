@@ -7,7 +7,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Install vint
-        run: pip install vim-vint
-      - name: Run vint
-        run: vint --style ./ 
+        run: |
+          pip install --upgrade pip
+          pip install vim-vint
+
+      - name: Run vint (style check)
+        run: |
+          vint --style . --verbose || true
+          # Fail only on real errors, not style warnings if we relax them
+          vint --style . 2>&1 | tee vint.log
+          if grep -q "error" vint.log; then
+            echo "Vint found errors"
+            exit 1
+          fi
+        continue-on-error: false

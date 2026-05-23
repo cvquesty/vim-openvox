@@ -1,4 +1,5 @@
 " ftplugin/puppet.vim — Buffer-local settings for Puppet files
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "

@@ -1,4 +1,5 @@
 " plugin/openvox.vim — Plugin commands and global configuration
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "

@@ -1,4 +1,5 @@
 " syntax/epuppet.vim — EPP (Embedded Puppet) template syntax
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "

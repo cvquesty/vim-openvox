@@ -1,4 +1,5 @@
 " indent/puppet.vim — Puppet 8 style-guide-compliant indentation
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "

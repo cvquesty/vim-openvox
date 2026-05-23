@@ -1,4 +1,5 @@
 " autoload/openvox/complete.vim — Omni-completion for Puppet
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "

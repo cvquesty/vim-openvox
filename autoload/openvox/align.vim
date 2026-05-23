@@ -1,4 +1,5 @@
 " autoload/openvox/align.vim — Arrow (=>) alignment for resource bodies
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "

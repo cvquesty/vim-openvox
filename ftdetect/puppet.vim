@@ -1,4 +1,5 @@
 " ftdetect/puppet.vim — Filetype detection for Puppet ecosystem
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 
@@ -23,7 +24,15 @@ function! s:DetectPuppetMetadata() abort
   " Only set if the JSON looks like Puppet module metadata
   let l:lines = getline(1, min([20, line('$')]))
   let l:text = join(l:lines, ' ')
-  if l:text =~# '"operatingsystem_support"\|"dependencies"\|"puppet"\|"pdk-version"\|"source".*forge\|"project_page".*github'
+  let l:patterns = [
+        \ '"operatingsystem_support"',
+        \ '"dependencies"',
+        \ '"puppet"',
+        \ '"pdk-version"',
+        \ '"source".*forge',
+        \ '"project_page".*github',
+        \ ]
+  if l:text =~# join(l:patterns, '\|')
     setfiletype json.puppet_metadata
   endif
 endfunction

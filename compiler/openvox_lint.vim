@@ -1,4 +1,5 @@
 " compiler/openvox_lint.vim — puppet-lint compiler integration
+scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 
