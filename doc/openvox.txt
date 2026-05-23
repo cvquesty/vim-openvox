@@ -29,7 +29,7 @@ vim-openvox is a comprehensive Puppet IDE plugin for Vim that provides:
 
   - Full Puppet 8 syntax highlighting (resource types, functions, data types,
     operators, heredocs, interpolation, EPP templates)
-  - Style-guide-compliant indentation (2-space soft tabs, arrow alignment)
+  - 2-space soft tabs with improving resource/conditional indentation (actively being aligned to gold-standard behavior)
   - Async linting via puppet-lint, metadata-json-lint, and yamllint
   - Context-aware omni-completion (Ctrl-X Ctrl-O)
   - Code navigation (go-to-definition, block jumping)
@@ -41,6 +41,39 @@ vim-openvox is a comprehensive Puppet IDE plugin for Vim that provides:
 It is designed to replace multiple Puppet-related plugins with a single,
 cohesive solution following the official Puppet Style Guide:
 https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm
+
+CURRENT STATUS                                          *openvox-status*
+
+vim-openvox is under active development toward gold-standard quality
+(closely tracking the battle-tested vim-puppet plugin).
+
+Current state (as of v0.9+):
+- Excellent: Syntax, async linting (puppet-lint + others), completion,
+  navigation, snippets/boilerplate, EPP support.
+- Good & improving rapidly: Indentation and arrow alignment (major
+  refactors have been applied to match vim-puppet behavior).
+- Documentation is being brought into alignment with actual behavior.
+
+For the absolute latest on indent/alignment robustness, see the
+git history or the companion `vim-puppet` repository (the reference
+implementation this plugin is being aligned to).
+
+DIFFERENCES FROM VIM-PUPPET (RODJEK)                     *openvox-vim-puppet*
+
+vim-openvox started as a rebrand/fork of the excellent rodjek/vim-puppet
+and its modern successors. The goal is to keep the best parts while
+adding OpenVox-specific branding, expanded linting (openvox-lint), and
+deeper integration features.
+
+Key differences and current alignment status:
+- Indentation and arrow alignment: Being actively ported to match the
+  battle-tested logic from the vim-puppet gold standard.
+- Linting: Stronger multi-linter async support (puppet-lint + openvox-lint
+  + metadata + yamllint).
+- Naming: All commands, functions, and variables use the `openvox` prefix
+  instead of `puppet`.
+- Documentation: Being updated to be strictly accurate about current
+  capabilities (see |openvox-status|).
 
 ==============================================================================
 2. INSTALLATION                                         *openvox-installation*

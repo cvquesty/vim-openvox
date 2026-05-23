@@ -9,8 +9,8 @@ plugins with a single, cohesive solution built around the official
 | Feature | Description |
 |---------|-------------|
 | **Syntax Highlighting** | Full Puppet 8 language — resource types, 90+ built-in functions, data types, heredocs, string interpolation, regex, operators, EPP templates |
-| **Indentation** | 2-space soft tabs with improved resource/conditional handling (actively being aligned to gold-standard vim-puppet behavior) |
-| **openvox-lint** | Async linting with puppet-lint (preferred) + openvox-lint, quickfix + signs, auto-fix |
+| **Indentation** | 2-space soft tabs with significantly improved resource and conditional handling (actively ported toward gold-standard vim-puppet behavior) |
+| **Arrow Alignment** | Manual + block alignment for `=>` (improved safety against strings/comments) |
 | **metadata-json-lint** | Validates module `metadata.json` files |
 | **yamllint** | Lints Hiera YAML data files |
 | **Omni-completion** | Context-aware completion for types, attributes, functions, variables, ensure values |
@@ -118,15 +118,16 @@ let g:openvox_fold = 1
 
 ## Replacing Other Plugins
 
-vim-openvox is designed to replace:
+vim-openvox aims to be a strong modern replacement. Current replacement quality:
 
-| Old Plugin | vim-openvox Replacement |
-|------------|----------------------|
-| `puppet-syntax-vim` / `vim-puppet` (rodjek) | Full syntax, indent, ftdetect, ftplugin |
-| `vim-puppet-lint` | Async puppet-lint + quickfix |
-| Syntastic (puppet checker) | Async puppet-lint + puppet validate |
-| ALE (puppet linters) | puppet-lint, metadata-json-lint, yamllint |
-| Tabular / vim-easy-align (for `=>`) | Built-in arrow alignment |
+| Old Plugin                  | Replacement Quality in vim-openvox                  | Notes |
+|-----------------------------|-----------------------------------------------------|-------|
+| `puppet-syntax-vim` / rodjek/vim-puppet | Good (syntax, folding, basic indent)               | Indent & alignment still being hardened to full gold-standard level |
+| `vim-puppet-lint` + Syntastic/ALE | Excellent (async, multi-linter, fix, signs)       | One of the strongest parts |
+| Tabular / vim-easy-align    | Good (manual + block alignment)                     | Safer now (skips strings/comments) |
+| Various snippet plugins     | Basic boilerplate generators                        | Good starting point; pair with UltiSnips/LuaSnip if desired |
+
+Full feature parity on indent/alignment with the gold-standard vim-puppet is the current active focus.
 
 To disable old plugins with Pathogen:
 ```vim
