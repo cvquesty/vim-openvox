@@ -33,9 +33,9 @@ function! s:CleanLine(line) abort
   let l:line = a:line
   " Remove single-quoted strings
   let l:line = substitute(l:line, "'[^']*'", "''", 'g')
-  " Remove double-quoted strings (simple)
+  " Remove double-quoted strings (simple, non-nested)
   let l:line = substitute(l:line, '"[^"]*"', '""', 'g')
-  " Remove comments
+  " Remove comments (but not inside strings — approximation is acceptable)
   let l:line = substitute(l:line, '#.*$', '', '')
   return l:line
 endfunction
@@ -112,14 +112,15 @@ function! GetPuppetIndent() abort
     let l:indent += l:sw
   endif
 
-  " Real handling for control keywords (if/elsif/else/unless/case without brace on same line)
+  " Real handling for control keywords
+  " Increase when previous line starts a control block without immediate {
   if l:pline_clean =~# '\<\(if\|elsif\|else\|unless\|case\)\>' && l:pline_clean !~# '{\s*$'
-    if l:pline_clean !~# '{\s*.*}\s*$'   " not a one-liner
+    if l:pline_clean !~# '{\s*.*}\s*$'
       let l:indent += l:sw
     endif
   endif
 
-  " Dedent on current line for else/elsif/default (same level as if/case)
+  " Dedent current line for closing keywords (else/elsif/default)
   if l:cline_clean =~# '^\s*\(elsif\|else\|default\)\>'
     let l:indent -= l:sw
   endif

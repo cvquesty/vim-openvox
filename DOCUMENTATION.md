@@ -300,10 +300,13 @@ The host syntax is loaded first, then Puppet syntax is included as `@puppetSynta
 **Indent rules (`GetPuppetIndent()`):**
 1. Inside heredoc → return `-1` (preserve existing indent)
 2. **Increase** by `shiftwidth` for each unmatched `{`, `(`, `[` on previous line
-3. **Increase** for lines ending with `:` (resource titles, case values)
-4. **Decrease** when current line starts with `}`, `)`, `]`
-5. **Handle** `} elsif`/`} else` on same line (dedent)
-6. Floor at 0 (no negative indent)
+3. **Increase** for lines ending with `:` **only when no preceding brace increase occurred** (prevents double-indent on `resource { 'title':`)
+4. Real handling for control keywords (`if`/`elsif`/`else`/`unless`/`case`) — increase when previous line opens a block without immediate `{`
+5. **Decrease** when current line starts with `}`, `)`, `]`
+6. **Dedent** on current line for `elsif`/`else`/`default`
+7. Floor at 0 (no negative indent)
+
+Note: This logic has been actively aligned toward the battle-tested vim-puppet gold standard. String/comment awareness in `PrevCodeLine` was improved. Further edge-case hardening (lambdas, complex chaining) is ongoing.
 
 ---
 
@@ -484,6 +487,26 @@ class <name> (
 
 **`compiler/openvox_lint.vim` (20 lines):**
 - `current_compiler = 'openvox_lint'`
+
+---
+
+## Development & Testing
+
+### Linting the Plugin
+```bash
+vint --style .
+```
+
+### Manual Regression Testing
+Always test on real manifests:
+- Resource declarations with `ensure` first + arrows
+- `if / elsif / else` (with and without braces on same line)
+- `case` statements
+- Heredocs
+- Comments and strings containing `{` or `=>`
+
+### Contributing
+When porting improvements from the vim-puppet reference implementation, keep changes minimal and faithful to the Puppet Style Guide. Prefer clarity over cleverness in the indent and alignment logic.
 - `makeprg` = `puppet-lint --log-format '%{path}:%{line}:%{column}:%{KIND}:%{check}:%{message}' %`
 - `errorformat` = `%f:%l:%c:%t%*[A-Z]:%m`
 
