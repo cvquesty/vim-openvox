@@ -9,8 +9,8 @@ plugins with a single, cohesive solution built around the official
 | Feature | Description |
 |---------|-------------|
 | **Syntax Highlighting** | Full Puppet 8 language — resource types, 90+ built-in functions, data types, heredocs, string interpolation, regex, operators, EPP templates |
-| **Indentation** | Style-guide-compliant 2-space soft tabs with smart block indentation |
-| **openvox-lint** | Async linting with all 37 checks, quickfix integration, auto-fix support |
+| **Indentation** | 2-space soft tabs with improved resource/conditional handling (actively being aligned to gold-standard vim-puppet behavior) |
+| **openvox-lint** | Async linting with puppet-lint (preferred) + openvox-lint, quickfix + signs, auto-fix |
 | **metadata-json-lint** | Validates module `metadata.json` files |
 | **yamllint** | Lints Hiera YAML data files |
 | **Omni-completion** | Context-aware completion for types, attributes, functions, variables, ensure values |
@@ -53,8 +53,9 @@ git clone https://github.com/cvquesty/vim-openvox.git
 
 ## Quick Start
 
-vim-openvox works out of the box. Open any `.pp` file and you get syntax
-highlighting, indentation, and auto-linting on save.
+vim-openvox works out of the box for syntax, folding, linting, and basic navigation.
+
+**Note on indentation & alignment**: Core features are functional. We are actively porting battle-tested logic from the vim-puppet gold standard to make auto-indent and block alignment rock-solid. Current behavior is good for most cases and improving rapidly.
 
 ### Key Mappings
 

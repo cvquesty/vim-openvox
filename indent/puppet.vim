@@ -28,13 +28,12 @@ function! s:IsStringOrComment(lnum, col) abort
   return l:syn =~? 'string\|comment\|heredoc'
 endfunction
 
-" ─── Helper: strip comments and trailing whitespace ──────────────
+" ─── Helper: strip strings/comments for analysis (improved) ─────
 function! s:CleanLine(line) abort
-  " Remove string contents to avoid false matches
   let l:line = a:line
   " Remove single-quoted strings
   let l:line = substitute(l:line, "'[^']*'", "''", 'g')
-  " Remove double-quoted strings
+  " Remove double-quoted strings (simple)
   let l:line = substitute(l:line, '"[^"]*"', '""', 'g')
   " Remove comments
   let l:line = substitute(l:line, '#.*$', '', '')
@@ -49,10 +48,14 @@ function! s:CountUnmatched(line, open, close) abort
   return l:opens - l:closes
 endfunction
 
-" ─── Helper: find the previous non-blank, non-comment line ───────
+" ─── Helper: find the previous non-blank, non-comment/string line ──
 function! s:PrevCodeLine(lnum) abort
   let l:lnum = prevnonblank(a:lnum - 1)
-  while l:lnum > 0 && getline(l:lnum) =~# '^\s*#'
+  while l:lnum > 0
+    let l:line = getline(l:lnum)
+    if l:line !~# '^\s*#' && !s:IsStringOrComment(l:lnum, 1)
+      break
+    endif
     let l:lnum = prevnonblank(l:lnum - 1)
   endwhile
   return l:lnum
@@ -88,8 +91,7 @@ function! GetPuppetIndent() abort
   let l:sw = shiftwidth()
   let l:indent = l:pindent
 
-  " ── Increase indent for opening blocks ──────────────────────────
-  " Count unmatched { ( [
+  " ── Increase indent for opening blocks (decoupled brace/colon) ──
   let l:brace_delta = s:CountUnmatched(l:pline, '{', '}')
   let l:paren_delta = s:CountUnmatched(l:pline, '(', ')')
   let l:bracket_delta = s:CountUnmatched(l:pline, '[', ']')
@@ -104,25 +106,25 @@ function! GetPuppetIndent() abort
     let l:indent += l:sw
   endif
 
-  " Increase for lines ending with : (case/selector values, resource title)
-  if l:pline_clean =~# ':\s*$'
+  " Increase for : ONLY for case/selector or continuation (not resource title that already opened {)
+  " This prevents double-indent on "file { 'title':"
+  if l:pline_clean =~# ':\s*$' && l:brace_delta <= 0
     let l:indent += l:sw
   endif
 
-  " Increase for lines starting class/define/node with opening brace
-  " already counted above via brace_delta
-
-  " Increase for if/elsif/else/unless/case without braces on same line
-  if l:pline_clean =~# '\<\(if\|elsif\|else\|unless\)\>' && l:pline_clean !~# '{\s*$'
-    " Only if the block opener has no brace on the same line and no closing brace
-    " This handles one-liner ifs — don't increase if it's a single-line conditional
-    if l:pline_clean =~# '{\s*.*}\s*$'
-      " Single-line block, no indent change
+  " Real handling for control keywords (if/elsif/else/unless/case without brace on same line)
+  if l:pline_clean =~# '\<\(if\|elsif\|else\|unless\|case\)\>' && l:pline_clean !~# '{\s*$'
+    if l:pline_clean !~# '{\s*.*}\s*$'   " not a one-liner
+      let l:indent += l:sw
     endif
   endif
 
+  " Dedent on current line for else/elsif/default (same level as if/case)
+  if l:cline_clean =~# '^\s*\(elsif\|else\|default\)\>'
+    let l:indent -= l:sw
+  endif
+
   " ── Decrease indent for closing blocks ──────────────────────────
-  " Current line starts with } ) ]
   if l:cline_clean =~# '^\s*}'
     let l:indent -= l:sw
   endif
@@ -135,38 +137,19 @@ function! GetPuppetIndent() abort
 
   " Handle elsif/else/default — same level as matching if/case
   if l:cline_clean =~# '^\s*\(elsif\|else\)\>'
-    " Should be at the same level as the if
     if l:pline_clean =~# '}\s*$' || l:pline_clean =~# '^\s*}'
-      " Previous line closed a block — elsif/else goes at same level
+      " already correct via previous decreases
     endif
   endif
 
-  " Handle closing } followed by else/elsif on same line
+  " Handle } else/elsif on same line
   if l:cline_clean =~# '^\s*}\s*\(elsif\|else\)\>'
     let l:indent -= l:sw
   endif
 
-  " ── Lambda pipes ────────────────────────────────────────────────
-  " Lines ending with |var| { — increase
-  if l:pline_clean =~# '|[^|]*|\s*{\s*$'
-    " Already handled by brace_delta
-  endif
+  " Lambda / chaining / semicolon continuations keep current level (no extra change)
+  " (brace_delta already handled the { )
 
-  " ── Chaining arrows ────────────────────────────────────────────
-  " Line ending with -> or ~> means continuation — don't change indent
-  " But the continued resource should be at same level
-  if l:pline_clean =~# '\(->\|\~>\)\s*$'
-    " Continuation line — keep same indent
-    " (already at l:pindent)
-  endif
-
-  " ── Handle semicolons (multi-resource bodies) ──────────────────
-  " After a ; (multi-title resource separator), keep same indent level
-  if l:pline_clean =~# ';\s*$'
-    " Same indent as the title line
-  endif
-
-  " ── Prevent negative indent ────────────────────────────────────
   if l:indent < 0
     let l:indent = 0
   endif

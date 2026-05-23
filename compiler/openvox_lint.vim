@@ -13,7 +13,7 @@ endif
 
 let s:cmd = get(g:, 'openvox_lint_command', 'puppet-lint')
 
-CompilerSet makeprg=puppet-lint\ --log-format\ '%{path}:%{line}:%{column}:%{KIND}:%{check}:%{message}'\ %
+execute 'CompilerSet makeprg=' . escape(s:cmd, ' \') . '\ --log-format\ ''%{path}:%{line}:%{column}:%{KIND}:%{check}:%{message}''\ %'
 
 " Errorformat for puppet-lint output
 " Format: path:line:column:KIND:check:message

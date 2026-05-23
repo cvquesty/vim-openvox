@@ -59,20 +59,24 @@ function! openvox#align#arrows() range abort
   echo printf('Aligned %d arrow(s)', l:arrow_count)
 endfunction
 
+" Helper: check if inside string/comment/heredoc (for safe searchpair)
+function! s:IsStringOrComment(lnum, col) abort
+  let l:syn = synIDattr(synID(a:lnum, a:col, 1), 'name')
+  return l:syn =~? 'string\|comment\|heredoc\|puppetInterpolation'
+endfunction
+
 " Auto-align: align arrows in the current resource block
 function! openvox#align#block() abort
-  " Find the enclosing { ... } block
+  " Find the enclosing { ... } block (skip strings/comments)
   let l:save_pos = getpos('.')
 
-  " Search backward for the opening {
-  let l:open = searchpair('{', '', '}', 'bnW')
+  let l:open = searchpair('{', '', '}', 'bnW', 's:IsStringOrComment(line("."), col("."))')
   if l:open == 0
     echo 'Not inside a resource block'
     return
   endif
 
-  " Search forward for the closing }
-  let l:close = searchpair('{', '', '}', 'nW')
+  let l:close = searchpair('{', '', '}', 'nW', 's:IsStringOrComment(line("."), col("."))')
   if l:close == 0
     echo 'Could not find closing brace'
     return
