@@ -146,6 +146,22 @@ Every feature is built around the
 - **Comments:** `#` only (C-style comments highlighted as warnings)
 - **Variables:** `$snake_case` with namespace qualification
 
+## Contributing & Help Wanted
+
+vim-openvox is actively being aligned with the battle-tested vim-puppet gold standard while adding OpenVox-specific enhancements and deeper tooling.
+
+We are looking for contributors in several areas:
+
+- **Core improvements** — Further hardening of indentation and arrow alignment
+- **Testing** — Adding regression tests for indent, alignment, and linting
+- **Documentation** — Improving examples, tutorials, and the help text
+- **LSP / Completion** — Integration ideas with `openvox-editor-services` or coc.nvim / nvim-lsp
+- **CI & Packaging** — Making the plugin easier to test and distribute
+
+If you're interested in helping, please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and how to get started.
+
+All contributions — code, documentation, testing, or ideas — are very welcome. This is a community project to make OpenVox development in Vim as smooth and powerful as possible.
+
 ## License
 
 Apache-2.0
