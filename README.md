@@ -4,7 +4,7 @@
 
 **A comprehensive Vim plugin for OpenVox and Puppet 8+ development**
 
-[![Version](https://img.shields.io/badge/version-1.0.0--rc1-orange?style=for-the-badge)](https://github.com/cvquesty/vim-openvox/releases)
+[![Version](https://img.shields.io/badge/version-1.0.1-orange?style=for-the-badge)](https://github.com/cvquesty/vim-openvox/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=for-the-badge)](LICENSE)
 [![Vim](https://img.shields.io/badge/Vim-8.0+-019833?style=for-the-badge&logo=vim&logoColor=white)](https://www.vim.org)
 [![Neovim](https://img.shields.io/badge/Neovim-0.5+-57A143?style=for-the-badge&logo=neovim&logoColor=white)](https://neovim.io)
@@ -74,7 +74,7 @@ git clone https://github.com/cvquesty/vim-openvox.git
 
 vim-openvox works out of the box for syntax, folding, linting, and basic navigation.
 
-**Note on indentation & alignment**: Core features are functional. We are actively porting battle-tested logic from the vim-puppet gold standard to make auto-indent and block alignment rock-solid. Current behavior is good for most cases and improving rapidly.
+**Note on indentation & alignment**: Core features are functional and have improved safety for arrow alignment (strings, comments, and heredocs are now properly skipped). We continue hardening toward full vim-puppet parity.
 
 ### Key Mappings
 

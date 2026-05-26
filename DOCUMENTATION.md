@@ -6,7 +6,7 @@
 
 **Repository:** `cvquesty/vim-openvox`  
 **License:** Apache-2.0  
-**Version:** 1.0.0
+**Version:** 1.0.1
 
 ---
 
