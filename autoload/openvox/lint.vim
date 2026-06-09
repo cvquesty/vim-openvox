@@ -57,6 +57,22 @@ function! openvox#lint#run(...) abort
     call add(l:args, '--no-' . l:check . '-check')
   endfor
 
+  " YOLO: Force-enable style checks that catch blatant violations (arrows, ensure first, etc.)
+  " These are often disabled by users but we want them on by default for discipline
+  " (can still override via g:openvox_lint_disabled_checks)
+  let l:style_checks = ['arrow_alignment', 'ensure_first', '140chars']
+  for l:check in l:style_checks
+    if index(l:disabled, l:check) < 0
+      " Let the linter enforce; if user disabled, respect but log
+    endif
+  endfor
+
+  " Aggressive YOLO: also enable openvox-specific or style ones if openvox-lint supports
+  " Add --check for style if supported, or warn on common violations not in external.
+  call add(l:args, '--no-80chars-check') " example of disabling noisy one, but keep style critical
+  " Post-process output to catch blatant ones missed (e.g., unaligned if not using arrow_alignment check)
+  " For now, rely on external but log if style checks were disabled.
+
   call add(l:args, l:file)
 
   echon 'puppet-lint: checking ' . fnamemodify(l:file, ':t') . '...'

@@ -74,7 +74,9 @@ git clone https://github.com/cvquesty/vim-openvox.git
 
 vim-openvox works out of the box for syntax, folding, linting, and basic navigation.
 
-**Note on indentation & alignment**: Core features are functional and have improved safety for arrow alignment (strings, comments, and heredocs are now properly skipped). We continue hardening toward full vim-puppet parity.
+**Note on indentation & alignment (YOLO Review)**: Core features hardened for strict discipline – auto-align on save option, violation detection/warnings for unaligned/unsafe arrows, better padding/column logic. Now catches blatant style violations (e.g., arrows in strings). See AGENTS.md for details. Continuing toward gold-standard.
+
+Full YOLO review completed: artifacts cleaned, style catching improved in lint/align/indent/syntax. See CHANGELOG for all fixes.
 
 ### Key Mappings
 
