@@ -116,10 +116,14 @@ Add to your `.vimrc`:
 " Auto-lint on save (default: 1)
 let g:openvox_auto_lint = 1
 
+" Auto-align => arrows on BufWritePre (default: 0/off).
+" Enable for strict on-save alignment discipline (silent; use :OpenvoxAlignBlock to inspect).
+let g:openvox_auto_align = 0
+
 " Line length limit (default: 140)
 let g:openvox_max_line_length = 140
 
-" Disable specific puppet-lint checks
+" Disable specific checks (openvox-lint / puppet-lint compat)
 let g:openvox_lint_disabled_checks = ['80chars', 'documentation']
 
 " Custom yamllint config for Hiera files

@@ -193,15 +193,24 @@ g:openvox_no_mappings ~
 g:openvox_auto_lint ~
   Automatically run the appropriate linter on save. Default: 1
 
+                                                   *g:openvox_auto_align*
+g:openvox_auto_align ~
+  Automatically align => arrows (via openvox#align#block) on BufWritePre
+  for *.pp files. Uses silent mode to avoid noise; real violations are
+  fixed (no echoerr in auto path). Default: 0 (off).
+  Enable with: let g:openvox_auto_align = 1
+  See |openvox-alignment|, autoload/openvox/align.vim (silent param,
+  column-based detection, safety via IsInStringOrComment).
+
                                                    *g:openvox_lint_args*
 g:openvox_lint_args ~
-  Extra arguments to pass to puppet-lint. List of strings.
+  Extra arguments to pass to the linter (openvox-lint / puppet-lint). List of strings.
   Default: [] >
     let g:openvox_lint_args = ['--relative']
 <
                                                    *g:openvox_lint_disabled_checks*
 g:openvox_lint_disabled_checks ~
-  List of puppet-lint checks to disable. Default: [] >
+  List of checks to disable. Default: [] >
     let g:openvox_lint_disabled_checks = ['80chars', 'documentation']
 <
                                                    *g:openvox_metadata_lint_args*

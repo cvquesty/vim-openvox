@@ -13,9 +13,16 @@ let g:loaded_openvox = 1
 
 " ─── Configuration defaults ──────────────────────────────────────
 
-" puppet-lint command path
+" openvox-lint (preferred) / puppet-lint command path. Default openvox-lint per OpenVox branding.
 if !exists('g:openvox_lint_command')
-  let g:openvox_lint_command = 'puppet-lint'
+  let g:openvox_lint_command = 'openvox-lint'
+endif
+
+" Auto-align arrows on BufWritePre for resources (default: 0/off).
+" Enable with: let g:openvox_auto_align = 1
+" When on, uses silent mode internally to avoid noise on every save; real violations fixed quietly (manual :OpenvoxAlignBlock to see messages).
+if !exists('g:openvox_auto_align')
+  let g:openvox_auto_align = 0
 endif
 
 " puppet command path

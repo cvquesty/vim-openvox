@@ -24,9 +24,12 @@ if exists('*GetPuppetIndent')
 endif
 
 " ─── Helper: check if inside a string or comment ─────────────────
+" Precise logic synced with autoload/openvox/align.vim s:IsInStringOrComment
+" (covers puppetComment, puppetCComment, puppet*String, puppetHeredoc*, puppetInterpolation, etc.)
+" Uses synID for accuracy (better than regex strip in some cases); keep in sync.
 function! s:IsStringOrComment(lnum, col) abort
   let l:syn = synIDattr(synID(a:lnum, a:col, 1), 'name')
-  return l:syn =~? 'string\|comment\|heredoc'
+  return l:syn =~? 'Comment\|String\|Heredoc\|Interpolation'
 endfunction
 
 " ─── Helper: strip strings/comments for analysis (improved) ─────
