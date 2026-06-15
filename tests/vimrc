@@ -1,0 +1,21 @@
+" Minimal vimrc for running tests in isolation for vim-openvox
+set nocompatible
+set rtp+=.
+filetype plugin indent on
+syntax on
+
+" Load the plugin
+runtime plugin/openvox.vim
+
+" Disable mappings and auto-lint for tests
+let g:openvox_no_mappings = 1
+let g:openvox_auto_lint = 0
+let g:openvox_auto_align = 0
+
+" For Neovim compatibility in tests
+if has('nvim')
+  set termguicolors
+endif
+
+" Use openvox-lint by default in tests
+let g:openvox_lint_command = 'openvox-lint'

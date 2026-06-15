@@ -27,53 +27,52 @@ CONTENTS                                                   *openvox-contents*
 
 vim-openvox is a comprehensive Puppet IDE plugin for Vim that provides:
 
-  - Full Puppet 8 syntax highlighting (resource types, functions, data types,
+  - Full Puppet 8 / OpenVox syntax highlighting (resource types, functions, data types,
     operators, heredocs, interpolation, EPP templates)
-  - 2-space soft tabs with improving resource/conditional indentation (actively being aligned to gold-standard behavior)
-  - Async linting via puppet-lint, metadata-json-lint, and yamllint
+  - 2-space soft tabs with resource/conditional indentation aligned to gold-standard behavior
+  - Async linting via openvox-lint (preferred; puppet-lint compat), metadata-json-lint, and yamllint
   - Context-aware omni-completion (Ctrl-X Ctrl-O)
   - Code navigation (go-to-definition, block jumping)
   - Boilerplate generation for classes, defined types, and modules
   - Browser-based documentation lookup
   - Compiler integration (:make support)
   - EPP template support with host-language syntax detection
+  - Auto arrow alignment (g:openvox_auto_align) with violation detection
 
 It is designed to replace multiple Puppet-related plugins with a single,
 cohesive solution following the official Puppet Style Guide:
 https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm
 
+Phase 4 complete: See AGENTS.md and PHASE4_PLAN.md for automation (tests, Makefile, CI), lifecycle (RELEASE_PROCESS.md), docs sync, and estate maturity.
+
 CURRENT STATUS                                          *openvox-status*
 
-vim-openvox is under active development toward gold-standard quality
-(closely tracking the battle-tested vim-puppet plugin).
+vim-openvox has completed Phase 4 (Polish, Automation & Estate Maturity).
+See AGENTS.md and PHASE4_PLAN.md.
 
-Current state (as of v0.9+):
-- Excellent: Syntax, async linting (puppet-lint + others), completion,
-  navigation, snippets/boilerplate, EPP support.
-- Good & improving rapidly: Indentation and arrow alignment (major
-  refactors have been applied to match vim-puppet behavior).
-- Documentation is being brought into alignment with actual behavior.
+Current state (v1.1.0+):
+- Excellent: Syntax, async linting (openvox-lint preferred + compat), completion,
+  navigation, snippets/boilerplate, EPP support, auto-align with violation detection.
+- Good: Indentation aligned to gold-standard.
+- Documentation synced with behavior; full tests, Makefile, CI, RELEASE_PROCESS.md.
 
-For the absolute latest on indent/alignment robustness, see the
-git history or the companion `vim-puppet` repository (the reference
-implementation this plugin is being aligned to).
+See |openvox-configuration| for g:openvox_auto_align and lint defaults.
 
 DIFFERENCES FROM VIM-PUPPET (RODJEK)                     *openvox-vim-puppet*
 
 vim-openvox started as a rebrand/fork of the excellent rodjek/vim-puppet
 and its modern successors. The goal is to keep the best parts while
-adding OpenVox-specific branding, expanded linting (openvox-lint), and
-deeper integration features.
+adding OpenVox-specific branding (openvox-lint preferred), expanded
+automation (tests, CI, auto-align), and deeper integration features.
 
 Key differences and current alignment status:
-- Indentation and arrow alignment: Being actively ported to match the
-  battle-tested logic from the vim-puppet gold standard.
-- Linting: Stronger multi-linter async support (puppet-lint + openvox-lint
-  + metadata + yamllint).
+- Indentation and arrow alignment: Aligned to match the battle-tested logic
+  from the vim-puppet gold standard (with auto-align via g:openvox_auto_align).
+- Linting: Stronger multi-linter async support (openvox-lint preferred +
+  puppet-lint compat + metadata + yamllint).
 - Naming: All commands, functions, and variables use the `openvox` prefix
   instead of `puppet`.
-- Documentation: Being updated to be strictly accurate about current
-  capabilities (see |openvox-status|).
+- Documentation: Synced and accurate (see |openvox-status|); Phase 4 complete.
 
 ==============================================================================
 2. INSTALLATION                                         *openvox-installation*
@@ -94,8 +93,8 @@ Using native packages (Vim 8+): >
     git clone https://github.com/cvquesty/vim-openvox.git
 <
 Requirements:~
-  - Vim 8.0+ (for async job support)
-  - puppet-lint (for .pp linting)
+  - Vim 8.0+ / Neovim 0.5+ (for async job support)
+  - openvox-lint (preferred; `gem install openvox-lint`) or puppet-lint (compat)
   - metadata-json-lint (for metadata.json validation)
   - yamllint (for Hiera YAML linting)
 
@@ -108,10 +107,11 @@ Install linters: >
 
 Linting commands:~
 
-*:OpenvoxLint*       Run puppet-lint on the current .pp file asynchronously.
+*:OpenvoxLint*       Run the configured linter (openvox-lint preferred; puppet-lint compat)
+                     on the current .pp file asynchronously.
                    Results populate the quickfix list.
 
-*:OpenvoxLintFix*    Run puppet-lint --fix to auto-fix issues, then re-lint.
+*:OpenvoxLintFix*    Run the configured linter with --fix to auto-fix issues, then re-lint.
 
 *:OpenvoxValidate*   Run `puppet parser validate` for syntax checking.
 
@@ -146,7 +146,7 @@ These mappings are set buffer-locally for Puppet files. Disable with
 |g:openvox_no_mappings|.
 
 Normal mode:~
-  <LocalLeader>l     Run puppet-lint (same as |:OpenvoxLint|)
+  <LocalLeader>l     Run the configured linter (same as |:OpenvoxLint|)
   <LocalLeader>v     Validate syntax (same as |:OpenvoxValidate|)
   <LocalLeader>f     Auto-fix lint issues (same as |:OpenvoxLintFix|)
   gd                 Go to definition of class/define under cursor
@@ -162,7 +162,7 @@ Visual mode:~
 
                                                    *g:openvox_lint_command*
 g:openvox_lint_command ~
-  Path to puppet-lint executable. Default: 'puppet-lint'
+  Path to linter executable. Default: 'openvox-lint' (puppet-lint compat supported)
 
                                                    *g:openvox_puppet_command*
 g:openvox_puppet_command ~
@@ -179,7 +179,7 @@ g:openvox_yamllint_command ~
                                                    *g:openvox_max_line_length*
 g:openvox_max_line_length ~
   Maximum line length. Sets 'textwidth' and 'colorcolumn'.
-  Default: 140 (per puppet-lint 140chars check)
+  Default: 140 (per openvox-lint/puppet-lint 140chars check)
 
                                                    *g:openvox_fold*
 g:openvox_fold ~
@@ -204,13 +204,13 @@ g:openvox_auto_align ~
 
                                                    *g:openvox_lint_args*
 g:openvox_lint_args ~
-  Extra arguments to pass to the linter (openvox-lint / puppet-lint). List of strings.
+  Extra arguments to pass to the linter (openvox-lint preferred; puppet-lint compat). List of strings.
   Default: [] >
     let g:openvox_lint_args = ['--relative']
 <
                                                    *g:openvox_lint_disabled_checks*
 g:openvox_lint_disabled_checks ~
-  List of checks to disable. Default: [] >
+  List of checks to disable (for openvox-lint / puppet-lint). Default: [] >
     let g:openvox_lint_disabled_checks = ['80chars', 'documentation']
 <
                                                    *g:openvox_metadata_lint_args*
@@ -233,10 +233,10 @@ Example .vimrc configuration: >
 
 vim-openvox integrates three linters that run asynchronously:
 
-puppet-lint~
+openvox-lint (preferred; puppet-lint compat)~
   Checks .pp manifests against the Puppet Style Guide. Runs automatically
-  on save (see |g:openvox_auto_lint|). All 39+ puppet-lint checks are
-  supported. The full list of checks:
+  on save (see |g:openvox_auto_lint|). All 39+ checks are supported (arrow_alignment,
+  ensure_first_param, etc.). The full list of checks:
 
     arrow_alignment, autoloader_layout, case_without_default,
     class_inherits_from_params_class, documentation,
@@ -254,7 +254,7 @@ puppet-lint~
     140chars, 2sp_soft_tabs, arrow_on_right_operand_line,
     code_on_top_scope, nested_classes_or_defines
 
-  Disable individual checks with |g:openvox_lint_disabled_checks|.
+  Disable individual checks with |g:openvox_lint_disabled_checks| (applies to openvox-lint / puppet-lint compat).
 
 metadata-json-lint~
   Validates Puppet module metadata.json files. Checks:
@@ -422,7 +422,7 @@ To disable old plugins with Pathogen: >
 Q: How do I disable auto-linting on save?
 A: Set `let g:openvox_auto_lint = 0` in your .vimrc.
 
-Q: puppet-lint is not found. What do I do?
+Q: The linter (openvox-lint preferred) is not found. What do I do?
 A: Install it with `gem install puppet-lint` and ensure it's in your PATH.
    Or set the full path: >
    let g:openvox_lint_command = '/usr/local/bin/puppet-lint'

@@ -1,21 +1,26 @@
 # Testing vim-openvox
 
-This directory is for regression tests (currently manual).
+This directory contains automated regression tests (modeled after vim-grok).
 
-## Indent Tests
-Place `.pp` files here with comments showing expected indentation.
-
-Example test file structure:
-```puppet
-" Test: basic resource
-file { '/tmp/test':
-  ensure => file,           " expected indent: 2 spaces
-  owner  => root,
-}
+## Running Tests
+```bash
+make test          # Run in Vim + Neovim (interactive)
+make ci-test       # CI-friendly (captures output, no TTY)
+make lint          # Run vint on Vimscript
 ```
 
-Run manual verification with `vim -u NONE -S tests/indent.vim somefile.pp` or just open files and use `==`.
+Tests use an isolated vimrc and run via `tests/run.vim`.
+
+## Test Files
+- `test_core.vim`: Plugin load, commands, functions, defaults, indent settings.
+- `test_align.vim`: Arrow alignment (basic, safety for strings/heredocs, block()).
+- `test_indent.vim`: 2-space indent for resources, heredocs, control structures.
+
+## Adding Tests
+Add new `test_*.vim` files and source them in `run.vim`.
+
+See `Makefile` for targets and `AGENTS.md` for development commands.
 
 ## Future
-- Add Vader.vim or native Vim script tests
-- Headless indent verification
+- Expand coverage (lint integration, completion, navigation).
+- Add Vader.vim or headless verification if needed.

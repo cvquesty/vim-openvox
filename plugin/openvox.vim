@@ -11,6 +11,9 @@ if exists('g:loaded_openvox') || &compatible
 endif
 let g:loaded_openvox = 1
 
+" Version (updated on release)
+let g:openvox_plugin_version = '1.1.0'
+
 " ─── Configuration defaults ──────────────────────────────────────
 
 " openvox-lint (preferred) / puppet-lint command path. Default openvox-lint per OpenVox branding.

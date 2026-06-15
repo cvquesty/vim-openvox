@@ -57,6 +57,28 @@ We welcome contributions in many forms:
 When reporting bugs, please include:
 - Vim or Neovim version (`:version`)
 - Output of `:PuppetLint` or `:OpenvoxLint` if relevant
+
+## Testing
+
+- `make lint`: Run vint style check.
+- `make test`: Run full suite in Vim + Neovim (via tests/run.vim + isolated vimrc).
+- `make ci-test`: Non-interactive version for CI.
+- Add regression tests in `tests/test_*.vim` (core, align, indent) and source them from `run.vim`.
+- Always test alignment and indentation on real manifests before submitting.
+
+## Pre-Commit & CI Automation (Estate/Harness)
+
+**MANDATORY before any push/PR:**
+- Run `make lint && make test` (or `make ci-test` for non-interactive).
+- Follow full checklist in AGENTS.md (CHANGELOG + docs + lint/tests + stage/commit/push).
+- Use `todo_write` (or equivalent) for multi-step changes.
+
+CI (GitHub Actions) enforces this on development branch:
+- lint.yml: vint via make lint.
+- test.yml: matrix (Vim primary, as user works exclusively in Vim; Neovim compat) via make ci-test + artifact upload on failure.
+- release.yml: skeleton on tags (draft from CHANGELOG; finalize manually per policy).
+
+See .github/workflows/ and AGENTS.md for details. This aligns with global Harness pre-commit and "ship code, not excuses".
 - A minimal reproducible example (a small `.pp` snippet)
 - Expected vs actual behavior
 

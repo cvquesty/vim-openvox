@@ -1,7 +1,9 @@
-name: CI
+name: CI (deprecated - see lint.yml and test.yml)
 
 on: [push, pull_request]
 
+# Deprecated: Evolved into separate lint.yml (vint/make lint) and test.yml (matrix + make ci-test).
+# Old logic preserved for transition; will be removed in M4.
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -16,10 +18,10 @@ jobs:
       - name: Run vint (style check)
         run: |
           vint --style . --verbose || true
-          # Fail only on real errors, not style warnings if we relax them
           vint --style . 2>&1 | tee vint.log
           if grep -q "error" vint.log; then
             echo "Vint found errors"
             exit 1
           fi
         continue-on-error: false
+

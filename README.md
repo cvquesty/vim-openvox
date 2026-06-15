@@ -74,9 +74,13 @@ git clone https://github.com/cvquesty/vim-openvox.git
 
 vim-openvox works out of the box for syntax, folding, linting, and basic navigation.
 
-**Note on indentation & alignment (YOLO Review)**: Core features hardened for strict discipline – auto-align on save option, violation detection/warnings for unaligned/unsafe arrows, better padding/column logic. Now catches blatant style violations (e.g., arrows in strings). See AGENTS.md for details. Continuing toward gold-standard.
+**Note on indentation & alignment (YOLO Review + Phase 4)**: Core features hardened for strict discipline – auto-align on save option (`g:openvox_auto_align`), violation detection/warnings for unaligned/unsafe arrows, better padding/column logic. Now catches blatant style violations (e.g., arrows in strings). See AGENTS.md for details. Continuing toward gold-standard.
 
-Full YOLO review completed: artifacts cleaned, style catching improved in lint/align/indent/syntax. See CHANGELOG for all fixes.
+Phase 4 (M2): Added automated tests (`make test`, `make lint`) modeled after vim-grok + full Makefile. See `tests/` and CHANGELOG for details.
+
+Phase 4 (M3): CI expanded to separate lint.yml + test.yml (matrix with Vim primary — user works exclusively in Vim; Neovim for compatibility; uses make ci-test + artifacts). release.yml skeleton on tags. Pre-commit automation mandated (`make lint && make test` before push/PR). Old ci.yml deprecated/evolved. See workflows, AGENTS, CONTRIBUTING, CHANGELOG.
+
+Phase 4 complete (M4 docs/lifecycle + M5 estate): See RELEASE_PROCESS.md, full docs sync in DOCUMENTATION.md/doc/openvox.txt, AGENTS.md, and estate PLAN.md. Use `g:openvox_auto_align=1` for auto arrow alignment on save.
 
 ### Key Mappings
 
@@ -130,9 +134,12 @@ let g:openvox_lint_disabled_checks = ['80chars', 'documentation']
 let g:openvox_yamllint_args = ['-c', '~/.yamllint.yml']
 
 " Custom linter paths (if not in $PATH)
-" Default is openvox-lint; puppet-lint also supported
+" Default is openvox-lint (preferred); puppet-lint compat supported
 let g:openvox_lint_command = '/usr/local/bin/openvox-lint'
 let g:openvox_puppet_command = '/opt/puppetlabs/bin/puppet'
+
+" Enable auto arrow alignment on save (Phase 4 feature)
+let g:openvox_auto_align = 1
 
 " Disable auto-mappings
 let g:openvox_no_mappings = 0

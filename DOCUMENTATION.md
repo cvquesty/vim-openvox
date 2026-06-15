@@ -2,36 +2,54 @@
 
 ## Overview
 
-**vim-openvox** is an 18-file Vim plugin providing a full Puppet 8 IDE experience. It targets Vim 8.0+ and uses async jobs for non-blocking linting. Every feature follows the [Puppet Style Guide](https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm).
+**vim-openvox** is a Vim plugin providing a full Puppet 8 / OpenVox IDE experience. It targets Vim 8.0+ / Neovim 0.5+ and uses async jobs for non-blocking linting and alignment. Every feature follows the [Puppet Style Guide](https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm).
 
 **Repository:** `cvquesty/vim-openvox`  
 **License:** Apache-2.0  
-**Version:** 1.0.1
+**Version:** 1.1.0
+
+**Phase 4 complete** (see PHASE4_PLAN.md / AGENTS.md): Polish, automation (tests/Makefile/CI), estate maturity, docs sync, lifecycle (RELEASE_PROCESS.md), pre-commit automation via `make lint && make test`.
 
 ---
 
-## File Inventory (18 files)
+## File Inventory (25+ files)
 
 | # | Path | Lines | Purpose |
 |---|------|------:|---------|
-| 1 | `plugin/openvox.vim` | 121 | Global config defaults, command definitions, autocmds |
+| 1 | `plugin/openvox.vim` | ~130 | Global config defaults (incl. g:openvox_auto_align, g:openvox_lint_command default openvox-lint, g:openvox_plugin_version), command definitions, autocmds |
 | 2 | `ftplugin/puppet.vim` | 114 | Buffer-local settings for `.pp` files (tabs, folding, mappings, compiler, omni) |
 | 3 | `ftdetect/puppet.vim` | 29 | Filetype detection for `.pp`, `.epp`, `Puppetfile`, Hiera YAML, `metadata.json` |
 | 4 | `syntax/puppet.vim` | 316 | Puppet 8 syntax highlighting (56 syntax groups) |
 | 5 | `syntax/epuppet.vim` | 93 | EPP template syntax with host-language detection |
-| 6 | `indent/puppet.vim` | 175 | Smart indentation engine |
-| 7 | `autoload/openvox/lint.vim` | 448 | Async linting: puppet-lint, puppet validate, metadata-json-lint, yamllint |
-| 8 | `autoload/openvox/align.vim` | 73 | Hash rocket (`=>`) alignment |
+| 6 | `indent/puppet.vim` | 175 | Smart indentation engine (2-space, heredoc skip, resource/conditional) |
+| 7 | `autoload/openvox/lint.vim` | 448 | Async linting: openvox-lint (preferred) / puppet-lint compat, dynamic echoes, metadata-json-lint, yamllint; style enforcement via defaults |
+| 8 | `autoload/openvox/align.vim` | ~160 | Hash rocket (`=>`) alignment with silent auto (g:openvox_auto_align), column-based violation detection, safety for strings/comments/heredocs/interpolation |
 | 9 | `autoload/openvox/complete.vim` | 261 | Context-aware omni-completion |
 | 10 | `autoload/openvox/navigate.vim` | 93 | Go-to-definition and block jumping |
 | 11 | `autoload/openvox/doc.vim` | 43 | Browser-based documentation lookup |
 | 12 | `autoload/openvox/snippets.vim` | 148 | Boilerplate generation for classes, defines, init.pp |
-| 13 | `compiler/openvox_lint.vim` | 20 | `:make` integration via puppet-lint |
+| 13 | `compiler/openvox_lint.vim` | 20 | `:make` integration via openvox-lint (puppet-lint compat) |
 | 14 | `compiler/openvox.vim` | 22 | `:make` integration via puppet parser validate |
 | 15 | `doc/openvox.txt` | 404 | Vim help (`:help openvox`) |
-| 16 | `README.md` | 147 | GitHub README |
+| 16 | `README.md` | ~160 | GitHub README (with Phase 4 notes, auto_align, make test/lint, CI, RELEASE_PROCESS) |
 | 17 | `LICENSE` | 189 | Apache 2.0 full text |
 | 18 | `.gitignore` | 6 | Swap files, `.DS_Store`, tags |
+| 19 | `AGENTS.md` | ~60 | Project AGENTS (Harness, YOLO history → structured Phase 4, pre-commit, development commands) |
+| 20 | `.grok/AGENTS.md` | ~10 | Local .grok rules (pre-commit via make) |
+| 21 | `CONTRIBUTING.md` | ~70 | Contributing (testing, pre-commit automation, development on development) |
+| 22 | `CHANGELOG.md` | ~50 | Keep a Changelog (M1-M3 Phase 4 entries) |
+| 23 | `Makefile` | ~35 | lint (vint), test (vim+nvim via run.vim), ci-test, clean, help |
+| 24 | `RELEASE_PROCESS.md` | ~25 | Release process (version in plugin + README, tag on development, draft GH release, deprecations) |
+| 25 | `tests/vimrc` | ~15 | Isolated test vimrc (no mappings/auto, openvox-lint) |
+| 26 | `tests/run.vim` | ~30 | Test runner |
+| 27 | `tests/test_core.vim` | ~40 | Core tests (load, commands, functions, defaults) |
+| 28 | `tests/test_align.vim` | ~50 | Align tests (safety, block, column detection) |
+| 29 | `tests/test_indent.vim` | ~40 | Indent tests (resources, heredoc, controls) |
+| 30 | `tests/README.md` | ~35 | Testing docs (make test/lint, how to add tests) |
+| 31 | `.github/workflows/lint.yml` | ~20 | Lint on push/PR (make lint) |
+| 32 | `.github/workflows/test.yml` | ~30 | Test matrix (Vim primary, Neovim compat; make ci-test + artifacts) |
+| 33 | `.github/workflows/release.yml` | ~25 | Release skeleton on v* tags (draft from CHANGELOG) |
+| 34 | `.github/workflows/ci.yml` | ~25 | Deprecated (evolved to lint.yml + test.yml) |
 
 ---
 

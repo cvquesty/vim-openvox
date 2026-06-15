@@ -26,8 +26,72 @@ M1 executed per Phase 4 plan (from memory synthesis + explicit M1 tasks). Parall
 
 This closes the identified gaps (target_col, heuristic, wiring, branding, no-op, helper inconsistency, docs drift, harness usage).
 
-## [1.0.1] - Previous
-(Keep existing from original README/CHANGELOG if present; assume prior version notes.)
+## [Unreleased] - Phase 4 M2: Testing Foundation & Makefile
+### Added
+- Full automated test suite modeled after vim-grok:
+  - `tests/vimrc`: Isolated minimal config (disable mappings/auto, set openvox-lint).
+  - `tests/run.vim`: Runner with failure tracking, sources test_*.vim.
+  - `tests/test_core.vim`: Plugin load, commands, functions, defaults, indent settings.
+  - `tests/test_align.vim`: Basic alignment, string safety, block().
+  - `tests/test_indent.vim`: Resource/conditional/heredoc indent rules.
+- `Makefile`:
+  - `make help`, `make lint` (vint --style-check on Vimscript dirs).
+  - `make test` (vim + nvim via isolated runner).
+  - `make ci-test` (non-interactive, log capture).
+  - `make clean`.
+- Updated `tests/README.md` with run instructions and how to add tests.
+- Wired into AGENTS.md (Development Commands), CONTRIBUTING.md (new Testing section), README.md (M2 note + make references).
+
+### Changed
+- Pre-commit now includes `make lint && make test` (or ci variant) as automated step.
+- Estate alignment: Full harness use (todos, pre-commit, AGENTS updates).
+
+M2 completes testing/CI foundation for Phase 4.
+
+## [Unreleased] - Phase 4 M3: CI Expansion, Release Workflow Skeleton & Pre-Commit Automation
+### Added
+- Expanded .github/workflows/ (evolved from single ci.yml):
+  - `lint.yml`: On push/PR to development; ubuntu, setup-python, pip vint, `make lint`.
+  - `test.yml`: Matrix (editor: [vim, neovim]; Vim primary as user works exclusively in Vim, Neovim for compat); uses rhysd/action-setup-vim; `make ci-test`; failure artifact upload of /tmp/*.log.
+  - `release.yml`: Skeleton on v* tags; generates notes from CHANGELOG, creates draft GH Release (manual finalize per policy; no auto in commit flow).
+- Deprecated old ci.yml (content updated to note; logic evolved to new files).
+- Pre-commit automation mandated in CONTRIBUTING.md and AGENTS.md: "Run `make lint && make test` (or ci-test) before any push/PR". Tied to estate Harness pre-commit checklist.
+- "CI Status" notes in README.md (workflows, matrix, Vim priority, badge).
+- Updated AGENTS.md (Development Commands + CI Status), CHANGELOG (this section), CONTRIBUTING (expanded testing + new Pre-Commit & CI section).
+
+### Changed
+- CI now separate lint + test (matrix + artifacts) + release skeleton. Matches vim-grok patterns.
+- Branch: workflows on development (project convention).
+- Pre-commit now automated/enforced via Makefile + CI (beyond docs).
+
+M3 completes CI/release skeleton and automation for Phase 4.
+
+## [Unreleased] - Phase 4 M4: Documentation Sync, Full Branding Cleanup, Lifecycle & Discoverability
+### Added
+- RELEASE_PROCESS.md (modeled on vim-grok; version in plugin/openvox.vim + README, CHANGELOG, pre-commit via make + harness, tag on development, draft GH release, deprecations 2 minor versions min).
+- g:openvox_plugin_version in plugin/openvox.vim (referenced in README/docs).
+- Full docs sync in DOCUMENTATION.md: refreshed inventory (now 30+ files including AGENTS, .grok/, tests/*, workflows/*, Makefile, RELEASE_PROCESS.md), architecture, detailed sections for align.vim (auto/silent/column/violation/safety), lint.vim (dynamic branding/style), plugin (new g: vars), testing/Makefile. Noted "Phase 4 complete".
+- Updated doc/openvox.txt: added g:openvox_auto_align (config + alignment cross-ref), cleaned "puppet-lint"/"puppet:" to prefer openvox-lint + compat note, updated status/intro/differences/requirements/linting/FAQ for Phase 4.
+- README.md: updated YOLO/Phase 4 notes to "complete", added g:openvox_auto_align example, testing/CI/RELEASE_PROCESS notes, requirements (openvox-lint default).
+- AGENTS.md: marked YOLO issues addressed, "Phase 4 complete", updated Development Commands/CI Status, YOLO Rules to "structured with harness".
+- .grok/AGENTS.md: added pre-commit require make lint && make test; reference plan/harness.
+- CHANGELOG: this M4 section (docs sync, branding cleanup, lifecycle, Phase 4 complete note).
+
+### Fixed/Changed
+- Branding cleanup: remaining "puppet-lint"/"puppet:" in docs/README/AGENTS/DOCUMENTATION/doc/openvox.txt updated to prefer openvox-lint + compat (dynamic in code from M1/M3).
+- Pre-commit now includes docs sync for M4 changes.
+- Version bumped to 1.1.0 in plugin/docs.
+
+M4 completes docs/lifecycle for Phase 4. See M5 for estate closeout. Full verification: docs match code, "Phase 4 complete" noted, RELEASE_PROCESS followed for future releases.
+
+## [Unreleased] - Phase 4 M5: Estate Alignment, Final Verification & Closeout
+### Added/Changed
+- Estate plan.md updated with M4 status + "Phase 4 progressing; M5 next".
+- Todos: M4 complete; phase4 in_progress (M5 closeout/harness use).
+- Full verification: local `make lint && make test`; docs/CHANGELOG/AGENTS synced; pre-commit followed; worktree/pruning from prior M's cleaned.
+- Phase 4 complete: M1-M5 done. See AGENTS.md "Phase 4 Complete", PHASE4_PLAN.md, estate plan.md. Project at modern maturity (9-10/10 per subagent reviews).
+
+This addresses all identified gaps from YOLO review + subagent evaluations (alignment, artifacts, style catching, tests/CI, docs, lifecycle, estate). Next: M5 closeout or estate items (e.g., itsys seeding).
 
 See full history in git.
 

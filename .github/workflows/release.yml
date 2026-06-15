@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes from CHANGELOG
+        id: changelog
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Extract latest section (Keep a Changelog format)
+          awk -v ver="## \\[$VERSION\\]" '
+            $0 ~ ver {found=1; next}
+            found && /^## / {exit}
+            found {print}
+          ' CHANGELOG.md > release_notes.md || echo "No specific entry, using default" > release_notes.md
+          cat release_notes.md
+
+      - name: Create GitHub Release (draft; manual finalize per policy)
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: vim-openvox ${{ github.ref_name }}
+          body_path: release_notes.md
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
