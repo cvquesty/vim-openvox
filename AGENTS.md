@@ -10,7 +10,7 @@ Follow global `~/.grok/Agents.md` "Harness Capabilities & Active Leverage" secti
 - For any changes: use `/commit` (enforce pre-commit checklist: update CHANGELOG, docs, lint, tests if added).
 - Vim plugin work: test indent/align manually or with future tests; run vint or equivalent lint.
 - Use `plan mode` for major refactors (e.g., full indent rewrite).
-- `todo_write` for multi-step fixes (e.g., alignment overhaul).
+- `todo_write` for multi-step fixes (e.g., alignment overhaul; M1 used for harness compliance).
 - Project `.grok/` for local rules (this seeds it).
 - `grok inspect` to verify loaded rules/skills.
 
@@ -18,14 +18,14 @@ This project had challenges: bad alignment discipline, weird artifacts in code, 
 
 ## Project Specifics
 - **Core Modules** (autoload/openvox/):
-  - align.vim: Arrow alignment logic (critical – has had discipline issues).
-  - lint.vim: Async integration with openvox-lint/puppet-lint, fix, metadata/yaml lint.
-  - indent is in indent/puppet.vim (not autoload).
+  - align.vim: Arrow alignment logic (critical – has had discipline issues; M1: dead target_col removed, proper column misalignment detection, silent param + auto BufWritePre, only real violations echoerr).
+  - lint.vim: Async integration with openvox-lint/puppet-lint, fix, metadata/yaml lint (M1: dynamic tool echoes, no-op YOLO removed).
+  - indent is in indent/puppet.vim (not autoload; M1: IsStringOrComment synced to align precision).
   - complete.vim, navigate.vim, snippets.vim, doc.vim.
 - **Indent**: indent/puppet.vim – must strictly follow 2-space, resource/conditional handling.
 - **Syntax**: syntax/puppet.vim (and epuppet) – must highlight per style (e.g., metaparams, ensure values).
 - **Ftplugin**: ftplugin/puppet.vim – sets tabstop=2, comments=# , mappings, surround.
-- **Style Enforcement**: Currently relies on external lint + manual align/indent commands. Need to catch more violations proactively (e.g., unaligned arrows as errors, wrong ordering).
+- **Style Enforcement**: Currently relies on external lint + manual align/indent commands. Need to catch more violations proactively (e.g., unaligned arrows as errors, wrong ordering). g:openvox_auto_align (default 0 in plugin; see wiring in plugin/openvox.vim, align auto augroup).
 - **Artifacts**: Remove any debug echoes, leftover "puppet" strings that should be openvox, instantiated test code in prod paths, stray prints.
 - **Known Issues (YOLO fixes needed)**:
   - Alignment: padding/ safe detection not strict enough; doesn't always enforce in practice.

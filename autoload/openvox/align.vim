@@ -18,15 +18,17 @@ scriptencoding utf-8
 " - STRICT: Now also detects and warns on unaligned arrows in resource bodies (style violation catcher).
 " - Padding is always exactly 1 space before => after max key; no extra artifacts.
 
-function! openvox#align#arrows() range abort
+function! openvox#align#arrows(...) range abort
+  let l:silent = a:0 > 0 ? a:1 : 0
   let l:lines = getline(a:firstline, a:lastline)
   let l:max_key_len = 0
   let l:arrow_count = 0
   let l:safe_lines = []   " list of {lnum, key, indent, value, arrow_col}
 
   " First pass: find longest *safe* key (only code-context arrows).
-  " YOLO: stricter – also track if any unsafe arrows found to warn on style violation.
-  " Also fix padding discipline: always use exactly 1 space before/after =>, compute max including indent for true column align.
+  " Safety model: only arrows in code (via s:FindFirstSafeArrowCol + IsInStringOrComment).
+  " Track unsafe for real style violations only.
+  " Padding: exactly one space before/after => (enforced in rewrite).
   let l:unsafe_count = 0
   let l:lnum = a:firstline
   for l:line in l:lines
@@ -66,17 +68,20 @@ function! openvox#align#arrows() range abort
 
   if l:arrow_count == 0
     if l:unsafe_count > 0
-      echoerr printf('Style violation: %d arrow(s) found but inside strings/comments/heredocs – fix per Puppet style guide', l:unsafe_count)
+      if !l:silent
+        echoerr printf('Style violation: %d arrow(s) found but inside strings/comments/heredocs – fix per Puppet style guide', l:unsafe_count)
+      endif
     else
-      echo 'No arrows (=>) found in selection (in code context)'
+      if !l:silent
+        echo 'No arrows (=>) found in selection (in code context)'
+      endif
     endif
     return
   endif
 
-  " Second pass: rewrite only the safe lines so => is aligned.
-  " arrow column = indent + max_key_len + 1 (one space before =>)
-  " YOLO: enforce exactly one space before/after => for strict discipline. Use column-based align to avoid padding bugs.
-  let l:target_col = len(l:indent) + l:max_key_len + 1  " rough; better per entry
+  " Second pass: rewrite only the safe lines so => is aligned to common column.
+  " arrow start col for => = len(indent) + max_key_len  (pads ensure space before '=>'; see ' => ' in concat).
+  " No dead target_col (was scope-leaked from prior loop, unused). Proper per-entry.
   for l:entry in l:safe_lines
     let l:key_len = len(l:entry.key)
     let l:pad = l:max_key_len - l:key_len
@@ -89,9 +94,13 @@ function! openvox#align#arrows() range abort
   endfor
 
   if l:unsafe_count > 0
-    echo printf('Aligned %d arrow(s); WARNING: %d unsafe arrow(s) ignored (style violation – move out of strings/comments)', l:arrow_count, l:unsafe_count)
+    if !l:silent
+      echo printf('Aligned %d arrow(s); WARNING: %d unsafe arrow(s) ignored (style violation – move out of strings/comments)', l:arrow_count, l:unsafe_count)
+    endif
   else
-    echo printf('Aligned %d arrow(s)', l:arrow_count)
+    if !l:silent
+      echo printf('Aligned %d arrow(s)', l:arrow_count)
+    endif
   endif
 endfunction
 
@@ -123,44 +132,86 @@ endfunction
 
 " Auto-align: align arrows in the current resource (or hash) block.
 " Uses searchpair with string/comment skipping for finding the block.
-" YOLO: now also triggers style violation warning if any unaligned arrows detected in block.
-function! openvox#align#block() abort
+" Now uses proper column-based detection (not rough single-line heuristic) for cross-line misalignment.
+" Optional silent arg for auto-paths (BufWritePre) to avoid noise; only real violations may echoerr (suppressed in silent).
+function! openvox#align#block(...) abort
+  let l:silent = a:0 > 0 ? a:1 : 0
   let l:save_pos = getpos('.')
 
   let l:open = searchpair('{', '', '}', 'bnW', 's:IsInStringOrComment(line("."), col("."))')
   if l:open == 0
-    echo 'Not inside a { ... } block'
+    if !l:silent
+      echo 'Not inside a { ... } block'
+    endif
     return
   endif
 
   let l:close = searchpair('{', '', '}', 'nW', 's:IsInStringOrComment(line("."), col("."))')
   if l:close == 0
-    echo 'Could not find closing brace'
+    if !l:silent
+      echo 'Could not find closing brace'
+    endif
     return
   endif
 
   " Align only the interior lines (skip the opening { line and closing } line)
-  " First, quick scan for blatant unaligned => in code context to catch violations
+  " Proper column-based detection for true cross-line misalignment (replaces rough post-=> heuristic).
+  " Collect safe arrows + current cols, compute max_key, compare each arrow_col to expected (indent + max).
   let l:interior_lines = getline(l:open + 1, l:close - 1)
-  let l:unaligned = 0
+  let l:safe_in_block = []
+  let l:lnum = l:open + 1
   for l:line in l:interior_lines
-    if l:line =~# '^\s*\S\+\s*=>' && l:line !~# '^\s*\S\+\s*=>\s*\S'
-      " Rough heuristic for unaligned (key followed by => without proper spacing/align)
-      let l:unaligned += 1
+    let l:arrow_col = s:FindFirstSafeArrowCol(l:line, l:lnum)
+    if l:arrow_col >= 0
+      let l:prefix = l:line[0 : l:arrow_col - 1]
+      let l:match = matchlist(l:prefix, '^\(\s*\)\(\S.*\)$')
+      if !empty(l:match)
+        let l:indent = l:match[1]
+        let l:key = substitute(l:match[2], '\s\+$', '', '')
+        let l:key_len = len(l:key)
+        call add(l:safe_in_block, {
+              \ 'lnum': l:lnum,
+              \ 'indent': l:indent,
+              \ 'key': l:key,
+              \ 'key_len': l:key_len,
+              \ 'arrow_col': l:arrow_col,
+              \ })
+      endif
     endif
+    let l:lnum += 1
   endfor
+
+  let l:unaligned = 0
+  if !empty(l:safe_in_block)
+    let l:max_key_len = 0
+    for l:e in l:safe_in_block
+      if l:e.key_len > l:max_key_len
+        let l:max_key_len = l:e.key_len
+      endif
+    endfor
+    for l:e in l:safe_in_block
+      " Expected start col of => after proper pads (see arrows() rewrite logic).
+      let l:expected = len(l:e.indent) + l:max_key_len
+      if l:e.arrow_col != l:expected
+        let l:unaligned += 1
+      endif
+    endfor
+  endif
   if l:unaligned > 0
-    echoerr printf('Blatant style violation: %d unaligned => arrow(s) in block – run align or fix manually per Puppet style guide', l:unaligned)
+    if !l:silent
+      echoerr printf('Blatant style violation: %d unaligned => arrow(s) in block – run align or fix manually per Puppet style guide', l:unaligned)
+    endif
   endif
 
-  execute (l:open + 1) . ',' . (l:close - 1) . 'call openvox#align#arrows()'
+  execute (l:open + 1) . ',' . (l:close - 1) . 'call openvox#align#arrows(' . l:silent . ')'
 
   call setpos('.', l:save_pos)
 endfunction
 
-" YOLO: Add auto-align on save for resources if enabled (new feature to catch violations proactively)
-" Enable with: let g:openvox_auto_align = 1
+" Auto-align on BufWritePre (if g:openvox_auto_align). Calls block(1) for silent (no noise on save).
+" Only real violations would have used echoerr (but suppressed in auto silent); auto primarily *fixes* silently.
+" Safety model fully preserved (IsInStringOrComment + searchpair skip).
 augroup openvox_align
   autocmd!
-  autocmd BufWritePre *.pp if get(g:, 'openvox_auto_align', 0) | call openvox#align#block() | endif
+  autocmd BufWritePre *.pp if get(g:, 'openvox_auto_align', 0) | call openvox#align#block(1) | endif
 augroup END

@@ -4,7 +4,7 @@ scriptencoding utf-8
 " License:    Apache-2.0
 "
 " Integrates:
-"   - puppet-lint   (for .pp manifest files)
+"   - openvox-lint (preferred; for .pp manifest files; puppet-lint compatible via g:openvox_lint_command)
 "   - metadata-json-lint (for metadata.json)
 "   - yamllint      (for Hiera YAML data files)
 "
@@ -17,12 +17,13 @@ let s:lint_output = []
 let s:lint_errors = []
 let s:lint_type = ''
 
-" ─── puppet-lint ──────────────────────────────────────────────────
+" ─── lint (openvox-lint preferred; puppet-lint compatible) ─────────
 
 function! openvox#lint#run(...) abort
   let l:file = expand('%:p')
   if empty(l:file) || !filereadable(l:file)
-    echohl WarningMsg | echo 'puppet-lint: No file to lint' | echohl None
+    let l:tool = fnamemodify(get(g:, 'openvox_lint_command', 'openvox-lint'), ':t')
+    echohl WarningMsg | echo l:tool . ': No file to lint' | echohl None
     return
   endif
 
@@ -36,9 +37,10 @@ function! openvox#lint#run(...) abort
 
   let s:lint_output = []
   let s:lint_errors = []
-  let s:lint_type = 'puppet-lint'
-
+  let s:lint_type = 'puppet-lint'  " internal dispatch key (log format compat)
   let l:cmd = get(g:, 'openvox_lint_command', 'openvox-lint')
+  let l:tool = fnamemodify(l:cmd, ':t')
+  let s:lint_tool = l:tool  " runtime basename for all user echoes/display (dynamic branding)
   let l:args = [l:cmd]
 
   " Output format for parsing: filename:line:column:KIND:check:message
@@ -57,25 +59,14 @@ function! openvox#lint#run(...) abort
     call add(l:args, '--no-' . l:check . '-check')
   endfor
 
-  " YOLO: Force-enable style checks that catch blatant violations (arrows, ensure first, etc.)
-  " These are often disabled by users but we want them on by default for discipline
-  " (can still override via g:openvox_lint_disabled_checks)
-  let l:style_checks = ['arrow_alignment', 'ensure_first', '140chars']
-  for l:check in l:style_checks
-    if index(l:disabled, l:check) < 0
-      " Let the linter enforce; if user disabled, respect but log
-    endif
-  endfor
-
-  " Aggressive YOLO: also enable openvox-specific or style ones if openvox-lint supports
-  " Add --check for style if supported, or warn on common violations not in external.
-  call add(l:args, '--no-80chars-check') " example of disabling noisy one, but keep style critical
-  " Post-process output to catch blatant ones missed (e.g., unaligned if not using arrow_alignment check)
-  " For now, rely on external but log if style checks were disabled.
+  " Critical style checks (arrow_alignment, ensure_first, 140chars, ...) are enabled by default
+  " in openvox-lint/puppet-lint. Respect g:openvox_lint_disabled_checks for user overrides.
+  " (No-op YOLO force loop removed; --only-checks available via g:openvox_lint_args or --only-checks if limiting desired.)
+  " openvox-lint supports --only-checks CHECKS (comma sep) per --help.
 
   call add(l:args, l:file)
 
-  echon 'puppet-lint: checking ' . fnamemodify(l:file, ':t') . '...'
+  echon l:tool . ': checking ' . fnamemodify(l:file, ':t') . '...'
 
   let s:lint_job = job_start(l:args, {
         \ 'out_cb':   function('s:on_stdout'),
@@ -90,7 +81,8 @@ endfunction
 function! openvox#lint#fix() abort
   let l:file = expand('%:p')
   if empty(l:file) || !filereadable(l:file)
-    echohl WarningMsg | echo 'puppet-lint: No file to fix' | echohl None
+    let l:tool = fnamemodify(get(g:, 'openvox_lint_command', 'openvox-lint'), ':t')
+    echohl WarningMsg | echo l:tool . ': No file to fix' | echohl None
     return
   endif
 
@@ -105,9 +97,11 @@ function! openvox#lint#fix() abort
   let s:lint_type = 'puppet-lint-fix'
 
   let l:cmd = get(g:, 'openvox_lint_command', 'openvox-lint')
+  let l:tool = fnamemodify(l:cmd, ':t')
+  let s:lint_tool = l:tool
   let l:args = [l:cmd, '--fix', l:file]
 
-  echo 'puppet-lint: fixing ' . fnamemodify(l:file, ':t') . '...'
+  echo l:tool . ': fixing ' . fnamemodify(l:file, ':t') . '...'
 
   let s:lint_job = job_start(l:args, {
         \ 'out_cb':   function('s:on_stdout'),
@@ -124,7 +118,8 @@ endfunction
 function! openvox#lint#validate() abort
   let l:file = expand('%:p')
   if empty(l:file) || !filereadable(l:file)
-    echohl WarningMsg | echo 'puppet: No file to validate' | echohl None
+    let l:puppet_tool = fnamemodify(get(g:, 'openvox_puppet_command', 'puppet'), ':t')
+    echohl WarningMsg | echo l:puppet_tool . ': No file to validate' | echohl None
     return
   endif
 
@@ -139,9 +134,11 @@ function! openvox#lint#validate() abort
   let s:lint_type = 'puppet-validate'
 
   let l:puppet_cmd = get(g:, 'openvox_puppet_command', 'puppet')
+  let l:puppet_tool = fnamemodify(l:puppet_cmd, ':t')
+  let s:puppet_tool = l:puppet_tool
   let l:args = [l:puppet_cmd, 'parser', 'validate', l:file]
 
-  echon 'puppet: validating ' . fnamemodify(l:file, ':t') . '...'
+  echon l:puppet_tool . ': validating ' . fnamemodify(l:file, ':t') . '...'
 
   let s:lint_job = job_start(l:args, {
         \ 'out_cb':   function('s:on_stdout'),
@@ -280,14 +277,15 @@ endfunction
 
 function! s:on_fix_exit(job, exit_code) abort
   let s:lint_job = v:null
+  let l:tool = get(s:, 'lint_tool', 'openvox-lint')
   if a:exit_code == 0
     " Reload the file after fixes
     edit
-    echohl MoreMsg | echo 'puppet-lint: fixes applied' | echohl None
+    echohl MoreMsg | echo l:tool . ': fixes applied' | echohl None
     " Run lint again to show remaining issues
     call openvox#lint#run()
   else
-    echohl ErrorMsg | echo 'puppet-lint --fix failed' | echohl None
+    echohl ErrorMsg | echo l:tool . ' --fix failed' | echohl None
     for l:line in s:lint_errors
       echohl ErrorMsg | echo '  ' . l:line | echohl None
     endfor
@@ -392,7 +390,7 @@ function! s:parse_puppet_lint(exit_code) abort
   endfor
 
   call setqflist(l:qflist)
-  call s:display_results('puppet-lint', l:qflist)
+  call s:display_results(get(s:, 'lint_tool', 'openvox-lint'), l:qflist)
 endfunction
 
 function! s:parse_puppet_validate(exit_code) abort
@@ -422,7 +420,7 @@ function! s:parse_puppet_validate(exit_code) abort
   endfor
 
   call setqflist(l:qflist)
-  call s:display_results('puppet-validate', l:qflist)
+  call s:display_results(get(s:, 'puppet_tool', 'puppet'), l:qflist)
 endfunction
 
 function! s:parse_metadata_lint(exit_code) abort
