@@ -24,9 +24,9 @@ setlocal expandtab
 setlocal smarttab
 
 " ─── Style Guide: Line width ────────────────────────────────────
-" puppet-lint checks 140 chars (configurable via g:openvox_max_line_length)
+" openvox-lint checks 140 chars (configurable via g:openvox_max_line_length)
+" colorcolumn only — do not set textwidth (code editor, not word processor)
 let s:max_line = get(g:, 'openvox_max_line_length', 140)
-execute 'setlocal textwidth=' . s:max_line
 
 " Show a color column at the limit
 if exists('+colorcolumn')
@@ -39,8 +39,8 @@ setlocal commentstring=#\ %s
 setlocal comments=:#
 
 " ─── Format options ──────────────────────────────────────────────
-" Auto-wrap comments, insert comment leader on <Enter>, allow gq
-setlocal formatoptions=croql
+" Minimal: allow gq; no auto-wrap on insert / no comment-leader spam
+setlocal formatoptions=cq
 
 " ─── Folding ─────────────────────────────────────────────────────
 " Fold by syntax/indent — useful for large manifests
@@ -73,7 +73,7 @@ if exists('g:loaded_surround')
 endif
 
 " ─── Compiler ────────────────────────────────────────────────────
-" Default to puppet-lint compiler
+" Default to openvox-lint compiler
 if exists(':compiler') == 2
   compiler openvox_lint
 endif
@@ -87,13 +87,13 @@ if !get(g:, 'openvox_no_mappings', 0)
   " <LocalLeader>a — Align => arrows in visual selection
   vnoremap <buffer> <silent> <LocalLeader>a :call openvox#align#arrows()<CR>
 
-  " <LocalLeader>l — Run puppet-lint on current file
+  " <LocalLeader>l — Run openvox-lint on current file
   nnoremap <buffer> <silent> <LocalLeader>l :OpenvoxLint<CR>
 
   " <LocalLeader>v — Validate puppet syntax
   nnoremap <buffer> <silent> <LocalLeader>v :OpenvoxValidate<CR>
 
-  " <LocalLeader>f — Auto-fix puppet-lint issues
+  " <LocalLeader>f — Auto-fix openvox-lint issues
   nnoremap <buffer> <silent> <LocalLeader>f :OpenvoxLintFix<CR>
 
   " gd — Go to definition (class/define)
@@ -109,7 +109,7 @@ endif
 
 " ─── Undo ftplugin ───────────────────────────────────────────────
 let b:undo_ftplugin = 'setlocal tabstop< softtabstop< shiftwidth< expandtab<'
-      \ . ' textwidth< colorcolumn< commentstring< comments<'
+      \ . ' colorcolumn< commentstring< comments<'
       \ . ' formatoptions< foldmethod< foldlevel< foldminlines<'
       \ . ' omnifunc<'
       \ . '| unlet! b:match_words b:match_ignorecase'

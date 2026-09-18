@@ -4,7 +4,7 @@
 
 **A comprehensive Vim plugin for OpenVox and Puppet 8+ development**
 
-[![Version](https://img.shields.io/badge/version-1.0.1-orange?style=for-the-badge)](https://github.com/cvquesty/vim-openvox/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-orange?style=for-the-badge)](https://github.com/cvquesty/vim-openvox/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=for-the-badge)](LICENSE)
 [![Vim](https://img.shields.io/badge/Vim-8.0+-019833?style=for-the-badge&logo=vim&logoColor=white)](https://www.vim.org)
 [![Neovim](https://img.shields.io/badge/Neovim-0.5+-57A143?style=for-the-badge&logo=neovim&logoColor=white)](https://neovim.io)
@@ -29,26 +29,23 @@ A comprehensive Vim plugin for OpenVox and Puppet 8+ development, built around t
 |---------|-------------|
 | **Syntax Highlighting** | Full Puppet 8 language — resource types, 90+ built-in functions, data types, heredocs, string interpolation, regex, operators, EPP templates |
 | **Indentation** | 2-space soft tabs with significantly improved resource and conditional handling (actively ported toward gold-standard vim-puppet behavior) |
-| **Arrow Alignment** | Manual + block alignment for `=>` (improved safety against strings/comments) |
-| **metadata-json-lint** | Validates module `metadata.json` files |
-| **yamllint** | Lints Hiera YAML data files |
+| **Arrow Alignment** | Align `=>` arrows per style guide (visual selection, block command, or optional auto-align on save) |
+| **Linting** | Async openvox-lint for manifests; metadata-json-lint; yamllint for Hiera |
 | **Omni-completion** | Context-aware completion for types, attributes, functions, variables, ensure values |
-| **Arrow Alignment** | Align `=>` arrows per style guide (visual selection or auto-detect block) |
 | **Navigation** | Go-to-definition (`gd`), block jumping (`[[` / `]]`) |
 | **Documentation** | Press `K` to open Puppet docs in browser |
 | **Snippets** | Generate class, defined type, and init.pp boilerplate with Puppet Strings docs |
 | **EPP Templates** | Host-language syntax detection (`.conf.epp` → conf + Puppet) |
 | **Filetype Detection** | `.pp`, `.epp`, `Puppetfile`, Hiera YAML, `metadata.json` |
-| **Compiler** | `:make` integration via puppet-lint and puppet validate |
+| **Compiler** | `:make` integration via openvox-lint and puppet validate |
 | **Code Folding** | Fold by indent level |
 
 ## Requirements
 
-- **Vim 8.0+** (async job support)
-- [openvox-lint](https://github.com/cvquesty/openvox-lint) — `gem install openvox-lint` (preferred)
-- [puppet-lint](https://puppetlabs.github.io/puppet-lint/) — `gem install puppet-lint` (also supported)
-- [metadata-json-lint](https://github.com/voxpupuli/metadata-json-lint) — `gem install metadata-json-lint`
-- [yamllint](https://github.com/adrienverge/yamllint) — `pip install yamllint`
+- **Vim 8.0+** (async job support) / **Neovim 0.5+**
+- [openvox-lint](https://github.com/cvquesty/openvox-lint) — **required** for linting: `gem install openvox-lint`
+- [metadata-json-lint](https://github.com/voxpupuli/metadata-json-lint) — `gem install metadata-json-lint` (optional; for `metadata.json`)
+- [yamllint](https://github.com/adrienverge/yamllint) — `pip install yamllint` (optional; for Hiera YAML)
 
 ## Installation
 
@@ -72,21 +69,29 @@ git clone https://github.com/cvquesty/vim-openvox.git
 
 ## Quick Start
 
-vim-openvox works out of the box for syntax, folding, linting, and basic navigation.
+Syntax highlighting, folding, indentation, navigation, and mappings work out of the box after install.
 
-**Note on indentation & alignment (YOLO Review + Phase 4)**: Core features hardened for strict discipline – auto-align on save option (`g:openvox_auto_align`), violation detection/warnings for unaligned/unsafe arrows, better padding/column logic. Now catches blatant style violations (e.g., arrows in strings). See AGENTS.md for details. Continuing toward gold-standard.
+For linting, install the OpenVox linter:
 
-Phase 4 (M2): Added automated tests (`make test`, `make lint`) modeled after vim-grok + full Makefile. See `tests/` and CHANGELOG for details.
+```bash
+gem install openvox-lint
+```
 
-Phase 4 (M3): CI expanded to separate lint.yml + test.yml (matrix with Vim primary — user works exclusively in Vim; Neovim for compatibility; uses make ci-test + artifacts). release.yml skeleton on tags. Pre-commit automation mandated (`make lint && make test` before push/PR). Old ci.yml deprecated/evolved. See workflows, AGENTS, CONTRIBUTING, CHANGELOG.
+Optional: `gem install metadata-json-lint` and `pip install yamllint` for metadata / Hiera checks.
 
-Phase 4 complete (M4 docs/lifecycle + M5 estate): See RELEASE_PROCESS.md, full docs sync in DOCUMENTATION.md/doc/openvox.txt, AGENTS.md, and estate PLAN.md. Use `g:openvox_auto_align=1` for auto arrow alignment on save.
+Useful defaults (see Configuration):
+
+- `g:openvox_auto_lint` — auto-run openvox-lint on save (default: `0`; set to `1` to enable)
+- `g:openvox_auto_align` — auto-align `=>` on save (default: `0`; set to `1` to enable)
+- `g:openvox_lint_open_quickfix` — auto-open quickfix on lint errors (default: `0`)
+
+See Key Mappings and Commands below, or `:help openvox` for the full reference.
 
 ### Key Mappings
 
 | Mode | Mapping | Action |
 |------|---------|--------|
-| Normal | `<LocalLeader>l` | Run puppet-lint |
+| Normal | `<LocalLeader>l` | Run openvox-lint |
 | Normal | `<LocalLeader>v` | Validate puppet syntax |
 | Normal | `<LocalLeader>f` | Auto-fix lint issues |
 | Normal | `gd` | Go to class/define definition |
@@ -98,8 +103,8 @@ Phase 4 complete (M4 docs/lifecycle + M5 estate): See RELEASE_PROCESS.md, full d
 ### Commands
 
 ```vim
-:OpenvoxLint            " Run puppet-lint on current file
-:OpenvoxLintFix         " Auto-fix puppet-lint issues
+:OpenvoxLint            " Run openvox-lint on current file
+:OpenvoxLintFix         " Auto-fix openvox-lint issues
 :OpenvoxValidate        " Run puppet parser validate
 :OpenvoxMetadataLint    " Lint metadata.json
 :OpenvoxYamlLint        " Lint YAML file with yamllint
@@ -117,29 +122,28 @@ Phase 4 complete (M4 docs/lifecycle + M5 estate): See RELEASE_PROCESS.md, full d
 Add to your `.vimrc`:
 
 ```vim
-" Auto-lint on save (default: 1)
+" Auto-lint on save (default: 0/off). Enable with:
 let g:openvox_auto_lint = 1
 
-" Auto-align => arrows on BufWritePre (default: 0/off).
-" Enable for strict on-save alignment discipline (silent; use :OpenvoxAlignBlock to inspect).
+" Auto-align => arrows on BufWritePre (default: 0/off)
 let g:openvox_auto_align = 0
 
-" Line length limit (default: 140)
+" Open quickfix automatically on lint errors (default: 0/off)
+" When off, a concise command-line message is shown; use :copen for details
+let g:openvox_lint_open_quickfix = 0
+
+" Line length limit — sets colorcolumn only (default: 140)
 let g:openvox_max_line_length = 140
 
-" Disable specific checks (openvox-lint / puppet-lint compat)
+" Disable specific openvox-lint checks
 let g:openvox_lint_disabled_checks = ['80chars', 'documentation']
 
 " Custom yamllint config for Hiera files
 let g:openvox_yamllint_args = ['-c', '~/.yamllint.yml']
 
-" Custom linter paths (if not in $PATH)
-" Default is openvox-lint (preferred); puppet-lint compat supported
+" Custom openvox-lint path (if not in $PATH)
 let g:openvox_lint_command = '/usr/local/bin/openvox-lint'
 let g:openvox_puppet_command = '/opt/puppetlabs/bin/puppet'
-
-" Enable auto arrow alignment on save (Phase 4 feature)
-let g:openvox_auto_align = 1
 
 " Disable auto-mappings
 let g:openvox_no_mappings = 0
