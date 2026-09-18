@@ -3,22 +3,25 @@ scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 
-" Puppet manifests
-autocmd BufNewFile,BufRead *.pp setfiletype puppet
+augroup openvox_ftdetect
+  autocmd!
+  " Puppet manifests
+  autocmd BufNewFile,BufRead *.pp setfiletype puppet
 
-" EPP (Embedded Puppet) templates
-autocmd BufNewFile,BufRead *.epp setfiletype epuppet
+  " EPP (Embedded Puppet) templates
+  autocmd BufNewFile,BufRead *.epp setfiletype epuppet
 
-" Puppetfile (module dependency management)
-autocmd BufNewFile,BufRead Puppetfile setfiletype ruby
+  " Puppetfile (module dependency management)
+  autocmd BufNewFile,BufRead Puppetfile setfiletype ruby
 
-" Hiera data files — detect YAML files under common Hiera paths
-" These get the puppet_yaml compound filetype so we can layer yamllint
-autocmd BufNewFile,BufRead */data/*.yaml,*/data/*.yml,*/hieradata/*.yaml,*/hieradata/*.yml,*/hiera/*.yaml,*/hiera/*.yml
-      \ setfiletype yaml.puppet_hiera
+  " Hiera data files — detect YAML files under common Hiera paths
+  " These get the puppet_yaml compound filetype so we can layer yamllint
+  autocmd BufNewFile,BufRead */data/*.yaml,*/data/*.yml,*/hieradata/*.yaml,*/hieradata/*.yml,*/hiera/*.yaml,*/hiera/*.yml
+        \ setfiletype yaml.puppet_hiera
 
-" metadata.json for Puppet modules
-autocmd BufNewFile,BufRead */metadata.json call s:DetectPuppetMetadata()
+  " metadata.json for Puppet modules
+  autocmd BufNewFile,BufRead */metadata.json call s:DetectPuppetMetadata()
+augroup END
 
 function! s:DetectPuppetMetadata() abort
   " Only set if the JSON looks like Puppet module metadata
