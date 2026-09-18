@@ -13,16 +13,25 @@ lint: ## Run vint linter on Vimscript files (requires vint to be installed)
 
 test: ## Run the test suite (requires Vim/Neovim in PATH)
 	@echo "Running vim-openvox tests..."
-	@vim -Nu test/vimrc -S test/run.vim || (echo "Vim tests failed"; exit 1)
+	@vim -Nu tests/vimrc -es -S tests/run.vim -c 'if get(g:, "test_failures", 1) | cquit 1 | else | qall! | endif' || (echo "Vim tests failed"; cat /tmp/vim-openvox-test-result.txt 2>/dev/null; exit 1)
 	@echo "Vim tests passed."
-	@nvim -u test/vimrc -S test/run.vim || (echo "Neovim tests failed"; exit 1)
-	@echo "Neovim tests passed."
-	@echo "All tests passed (expand with more test_*.vim files for lint, completion, etc.)."
+	@if command -v nvim >/dev/null 2>&1; then \
+		nvim --headless -u tests/vimrc -S tests/run.vim -c 'if get(g:, "test_failures", 1) | cquit 1 | else | qall! | endif' || (echo "Neovim tests failed"; cat /tmp/vim-openvox-test-result.txt 2>/dev/null; exit 1); \
+		echo "Neovim tests passed."; \
+	else \
+		echo "Skipping Neovim tests (nvim not in PATH)."; \
+	fi
+	@echo "All tests passed."
 
 ci-test: ## CI-friendly test (no interactive, capture output)
-	@vim -Nu test/vimrc -S test/run.vim > /tmp/vim-test.log 2>&1 || (cat /tmp/vim-test.log; exit 1)
-	@nvim -u test/vimrc -S test/run.vim > /tmp/nvim-test.log 2>&1 || (cat /tmp/nvim-test.log; exit 1)
+	@vim -Nu tests/vimrc -es -S tests/run.vim -c 'if get(g:, "test_failures", 1) | cquit 1 | else | qall! | endif' > /tmp/vim-test.log 2>&1 || (cat /tmp/vim-test.log; cat /tmp/vim-openvox-test-result.txt 2>/dev/null; exit 1)
+	@if command -v nvim >/dev/null 2>&1; then \
+		nvim --headless -u tests/vimrc -S tests/run.vim -c 'if get(g:, "test_failures", 1) | cquit 1 | else | qall! | endif' > /tmp/nvim-test.log 2>&1 || (cat /tmp/nvim-test.log; cat /tmp/vim-openvox-test-result.txt 2>/dev/null; exit 1); \
+	else \
+		echo "Skipping Neovim tests (nvim not in PATH)."; \
+	fi
 	@echo "CI tests passed."
+
 
 clean: ## Clean temporary files
 	@find . -name "*.swp" -o -name "*.swo" -o -name "*~" | xargs rm -f || true

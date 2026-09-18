@@ -1,31 +1,35 @@
-" test/run.vim - Test runner for vim-openvox
-" Usage: vim -Nu test/vimrc -S test/run.vim
-" Or in CI: same
+" tests/run.vim - Test runner for vim-openvox
+" Usage (CI): vim -Nu tests/vimrc -es -S tests/run.vim -c '...'
+" Only this file should exit Vim; test_*.vim must throw on failure, never qall/cquit.
 
 let s:failures = 0
+let s:log = []
+let g:test_failures = 0
+
+function! s:Log(msg) abort
+  call add(s:log, a:msg)
+endfunction
 
 function! s:RunTest(file) abort
-  echo '=== Running ' . a:file . ' ==='
+  call s:Log('=== Running ' . a:file . ' ===')
   try
-    execute 'source ' . a:file
+    execute 'source ' . fnameescape(a:file)
+    call s:Log('OK ' . a:file)
   catch
-    echo 'ERROR in ' . a:file . ': ' . v:exception
+    call s:Log('ERROR in ' . a:file . ': ' . v:exception)
     let s:failures += 1
   endtry
 endfunction
 
-" Run core tests
-call s:RunTest('test/test_core.vim')
+call s:RunTest('tests/test_core.vim')
+call s:RunTest('tests/test_align.vim')
+call s:RunTest('tests/test_indent.vim')
 
-" Add more test files here as we expand:
-call s:RunTest('test/test_align.vim')
-call s:RunTest('test/test_indent.vim')
-" call s:RunTest('test/test_lint.vim')
-
+let g:test_failures = s:failures
 if s:failures > 0
-  echo 'TESTS FAILED: ' . s:failures . ' failures'
-  cquit 1
+  call s:Log('TESTS FAILED: ' . s:failures . ' failures')
 else
-  echo 'All tests passed!'
-  qall! 0
+  call s:Log('All tests passed!')
 endif
+call writefile(s:log, '/tmp/vim-openvox-test-result.txt')
+" Exit is left to the invoking -c / make target so -es mode always terminates.

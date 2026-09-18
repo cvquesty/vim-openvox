@@ -9,6 +9,10 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
 
@@ -19,7 +23,7 @@ jobs:
 
       - name: Install vint
         run: |
-          pip install --upgrade pip
+          pip install --upgrade pip setuptools wheel
           pip install vim-vint
 
       - name: Run lint

@@ -2,7 +2,7 @@
 
 Author:  xAI
 License: Apache-2.0
-Version: 1.0.1
+Version: 1.1.0
 
 ==============================================================================
 CONTENTS                                                   *openvox-contents*
@@ -29,50 +29,37 @@ vim-openvox is a comprehensive Puppet IDE plugin for Vim that provides:
 
   - Full Puppet 8 / OpenVox syntax highlighting (resource types, functions, data types,
     operators, heredocs, interpolation, EPP templates)
-  - 2-space soft tabs with resource/conditional indentation aligned to gold-standard behavior
-  - Async linting via openvox-lint (preferred; puppet-lint compat), metadata-json-lint, and yamllint
+  - 2-space soft tabs with resource/conditional indentation
+  - Async linting via openvox-lint, metadata-json-lint, and yamllint
   - Context-aware omni-completion (Ctrl-X Ctrl-O)
   - Code navigation (go-to-definition, block jumping)
   - Boilerplate generation for classes, defined types, and modules
   - Browser-based documentation lookup
   - Compiler integration (:make support)
   - EPP template support with host-language syntax detection
-  - Auto arrow alignment (g:openvox_auto_align) with violation detection
+  - Optional auto arrow alignment (|g:openvox_auto_align|)
 
 It is designed to replace multiple Puppet-related plugins with a single,
 cohesive solution following the official Puppet Style Guide:
 https://help.puppet.com/core/8/Content/PuppetCore/style_guide.htm
 
-Phase 4 complete: See AGENTS.md and PHASE4_PLAN.md for automation (tests, Makefile, CI), lifecycle (RELEASE_PROCESS.md), docs sync, and estate maturity.
-
 CURRENT STATUS                                          *openvox-status*
 
-vim-openvox has completed Phase 4 (Polish, Automation & Estate Maturity).
-See AGENTS.md and PHASE4_PLAN.md.
-
-Current state (v1.1.0+):
-- Excellent: Syntax, async linting (openvox-lint preferred + compat), completion,
-  navigation, snippets/boilerplate, EPP support, auto-align with violation detection.
-- Good: Indentation aligned to gold-standard.
-- Documentation synced with behavior; full tests, Makefile, CI, RELEASE_PROCESS.md.
-
-See |openvox-configuration| for g:openvox_auto_align and lint defaults.
+v1.1.0: syntax, folding, navigation, snippets, EPP, async openvox-lint,
+metadata/yaml lint, and arrow alignment are available. Indentation continues
+to track gold-standard vim-puppet behavior. See |openvox-configuration| for
+|g:openvox_auto_align|, |g:openvox_auto_lint|, and |g:openvox_lint_open_quickfix|.
 
 DIFFERENCES FROM VIM-PUPPET (RODJEK)                     *openvox-vim-puppet*
 
-vim-openvox started as a rebrand/fork of the excellent rodjek/vim-puppet
-and its modern successors. The goal is to keep the best parts while
-adding OpenVox-specific branding (openvox-lint preferred), expanded
-automation (tests, CI, auto-align), and deeper integration features.
+vim-openvox builds on the excellent rodjek/vim-puppet tradition while adding
+OpenVox branding (openvox-lint), async multi-linter support, and deeper
+tooling (auto-align option, tests/CI).
 
-Key differences and current alignment status:
-- Indentation and arrow alignment: Aligned to match the battle-tested logic
-  from the vim-puppet gold standard (with auto-align via g:openvox_auto_align).
-- Linting: Stronger multi-linter async support (openvox-lint preferred +
-  puppet-lint compat + metadata + yamllint).
-- Naming: All commands, functions, and variables use the `openvox` prefix
-  instead of `puppet`.
-- Documentation: Synced and accurate (see |openvox-status|); Phase 4 complete.
+Key differences:
+- Linting: openvox-lint (plus metadata-json-lint and yamllint)
+- Naming: commands, functions, and variables use the `openvox` prefix
+- Optional on-save arrow alignment via |g:openvox_auto_align|
 
 ==============================================================================
 2. INSTALLATION                                         *openvox-installation*
@@ -94,12 +81,12 @@ Using native packages (Vim 8+): >
 <
 Requirements:~
   - Vim 8.0+ / Neovim 0.5+ (for async job support)
-  - openvox-lint (preferred; `gem install openvox-lint`) or puppet-lint (compat)
-  - metadata-json-lint (for metadata.json validation)
-  - yamllint (for Hiera YAML linting)
+  - openvox-lint (required for linting: `gem install openvox-lint`)
+  - metadata-json-lint (optional; for metadata.json validation)
+  - yamllint (optional; for Hiera YAML linting)
 
 Install linters: >
-    gem install puppet-lint metadata-json-lint
+    gem install openvox-lint metadata-json-lint
     pip install yamllint
 <
 ==============================================================================
@@ -107,9 +94,8 @@ Install linters: >
 
 Linting commands:~
 
-*:OpenvoxLint*       Run the configured linter (openvox-lint preferred; puppet-lint compat)
-                     on the current .pp file asynchronously.
-                   Results populate the quickfix list.
+*:OpenvoxLint*       Run openvox-lint on the current .pp file asynchronously.
+                   Results populate the quickfix list (see |g:openvox_lint_open_quickfix|).
 
 *:OpenvoxLintFix*    Run the configured linter with --fix to auto-fix issues, then re-lint.
 
@@ -162,7 +148,7 @@ Visual mode:~
 
                                                    *g:openvox_lint_command*
 g:openvox_lint_command ~
-  Path to linter executable. Default: 'openvox-lint' (puppet-lint compat supported)
+  Path to openvox-lint executable. Default: 'openvox-lint'
 
                                                    *g:openvox_puppet_command*
 g:openvox_puppet_command ~
@@ -178,8 +164,8 @@ g:openvox_yamllint_command ~
 
                                                    *g:openvox_max_line_length*
 g:openvox_max_line_length ~
-  Maximum line length. Sets 'textwidth' and 'colorcolumn'.
-  Default: 140 (per openvox-lint/puppet-lint 140chars check)
+  Maximum line length. Sets 'colorcolumn' only (not 'textwidth').
+  Default: 140 (per openvox-lint 140chars check)
 
                                                    *g:openvox_fold*
 g:openvox_fold ~
@@ -191,7 +177,13 @@ g:openvox_no_mappings ~
 
                                                    *g:openvox_auto_lint*
 g:openvox_auto_lint ~
-  Automatically run the appropriate linter on save. Default: 1
+  Automatically run the appropriate linter on save. Default: 0 (off)
+
+                                                   *g:openvox_lint_open_quickfix*
+g:openvox_lint_open_quickfix ~
+  Open the quickfix window automatically when lint finds issues.
+  Default: 0 (off). When off, a concise command-line message is shown;
+  the quickfix list is still populated — use :copen for details.
 
                                                    *g:openvox_auto_align*
 g:openvox_auto_align ~
@@ -204,13 +196,13 @@ g:openvox_auto_align ~
 
                                                    *g:openvox_lint_args*
 g:openvox_lint_args ~
-  Extra arguments to pass to the linter (openvox-lint preferred; puppet-lint compat). List of strings.
+  Extra arguments to pass to openvox-lint. List of strings.
   Default: [] >
     let g:openvox_lint_args = ['--relative']
 <
                                                    *g:openvox_lint_disabled_checks*
 g:openvox_lint_disabled_checks ~
-  List of checks to disable (for openvox-lint / puppet-lint). Default: [] >
+  List of openvox-lint checks to disable. Default: [] >
     let g:openvox_lint_disabled_checks = ['80chars', 'documentation']
 <
                                                    *g:openvox_metadata_lint_args*
@@ -224,6 +216,7 @@ g:openvox_yamllint_args ~
 <
 Example .vimrc configuration: >
     let g:openvox_auto_lint = 1
+    let g:openvox_lint_open_quickfix = 0
     let g:openvox_max_line_length = 140
     let g:openvox_lint_disabled_checks = ['80chars']
     let g:openvox_yamllint_args = ['-c', '~/.yamllint.yml']
@@ -233,7 +226,7 @@ Example .vimrc configuration: >
 
 vim-openvox integrates three linters that run asynchronously:
 
-openvox-lint (preferred; puppet-lint compat)~
+openvox-lint~
   Checks .pp manifests against the Puppet Style Guide. Runs automatically
   on save (see |g:openvox_auto_lint|). All 39+ checks are supported (arrow_alignment,
   ensure_first_param, etc.). The full list of checks:
@@ -254,7 +247,8 @@ openvox-lint (preferred; puppet-lint compat)~
     140chars, 2sp_soft_tabs, arrow_on_right_operand_line,
     code_on_top_scope, nested_classes_or_defines
 
-  Disable individual checks with |g:openvox_lint_disabled_checks| (applies to openvox-lint / puppet-lint compat).
+  Disable individual checks with |g:openvox_lint_disabled_checks|.
+  Project config: prefer `.openvox-lint.rc` (see openvox-lint docs).
 
 metadata-json-lint~
   Validates Puppet module metadata.json files. Checks:
@@ -383,7 +377,7 @@ Conditionals:~
   - No right-to-left relationship arrows (<- or <~)
 
 Line Length:~
-  - 140-character maximum (puppet-lint default)
+  - 140-character maximum (openvox-lint default); colorcolumn only
   - Configurable via |g:openvox_max_line_length|
 
 Comments:~
@@ -402,13 +396,13 @@ vim-openvox is designed to replace these plugins:
       → Full syntax, indent, ftdetect, ftplugin replacement
 
   vim-puppet-lint
-      → Async puppet-lint with quickfix integration
+      → Async openvox-lint with quickfix integration
 
   syntastic (puppet checker)
-      → Async puppet-lint and puppet validate
+      → Async openvox-lint and puppet validate
 
   ALE (puppet linters)
-      → puppet-lint, metadata-json-lint, yamllint integration
+      → openvox-lint, metadata-json-lint, yamllint integration
 
   tabular / vim-easy-align (for => only)
       → Built-in arrow alignment
@@ -419,20 +413,21 @@ To disable old plugins with Pathogen: >
 ==============================================================================
 14. FAQ                                                       *openvox-faq*
 
-Q: How do I disable auto-linting on save?
-A: Set `let g:openvox_auto_lint = 0` in your .vimrc.
+Q: How do I enable auto-linting on save?
+A: Set `let g:openvox_auto_lint = 1` in your .vimrc (default is off).
 
-Q: The linter (openvox-lint preferred) is not found. What do I do?
-A: Install it with `gem install puppet-lint` and ensure it's in your PATH.
+Q: openvox-lint is not found. What do I do?
+A: Install it with `gem install openvox-lint` and ensure it's in your PATH.
    Or set the full path: >
-   let g:openvox_lint_command = '/usr/local/bin/puppet-lint'
+   let g:openvox_lint_command = '/usr/local/bin/openvox-lint'
 <
 Q: How do I use a custom yamllint config for Hiera files?
 A: Set `let g:openvox_yamllint_args = ['-c', '/path/to/.yamllint.yml']`
 
-Q: Can I disable specific puppet-lint checks?
+Q: Can I disable specific openvox-lint checks?
 A: Yes: `let g:openvox_lint_disabled_checks = ['80chars', 'documentation']`
-   You can also use a .puppet-lint.rc file in your project root.
+   Or use a `.openvox-lint.rc` file in your project root (same check-flag
+   style as historical puppet-lint rc files; prefer the openvox-lint name).
 
 Q: How do I jump to a class defined in another module?
 A: Place your cursor on the class name and press `gd`. The plugin searches

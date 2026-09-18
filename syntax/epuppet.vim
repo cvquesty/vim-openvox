@@ -12,6 +12,7 @@ endif
 
 " Determine the host syntax from the original filename
 " e.g., foo.conf.epp → conf, foo.html.epp → html
+" SEC: only allowlisted extensions — never use raw :e in :execute (filename | injection)
 let s:host_syntax = ''
 let s:basename = expand('%:t:r')  " Strip .epp extension
 let s:host_ext = fnamemodify(s:basename, ':e')
@@ -33,7 +34,8 @@ if !empty(s:host_ext)
         \ 'rb':    'ruby',
         \ 'py':    'python',
         \ }
-  let s:host_syntax = get(s:host_map, s:host_ext, s:host_ext)
+  " No raw fallback — unknown ext → no host syntax (avoids |/"/` in filenames)
+  let s:host_syntax = get(s:host_map, s:host_ext, '')
 endif
 
 " Load the host syntax if detected and available

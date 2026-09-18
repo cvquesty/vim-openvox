@@ -1,6 +1,34 @@
+## Unreleased
+
+### Quality
+- Fix test harness paths (`tests/` not `test/`) and stop per-file `qall`/`cquit` so the full suite can run.
+- Run tests in Vim `-es` / Neovim `--headless` with an explicit quit `-c` so CI does not hang on exit.
+- Update `test_core` for `g:openvox_auto_lint` default 0; set `filetype=puppet` before indent asserts.
+- `align#block` misalignment notice is a non-fatal warning (was `echoerr`, which aborted before auto-align).
+
 # Changelog
 
 All notable changes to vim-openvox.
+
+## [Unreleased] - Architect remediations
+
+### Fixed
+- `autoload/openvox/lint.vim`: Neovim-compatible job shim (`s:job_start_compat` / `s:job_stop_compat`) using list-form argv only; Vim8 keeps `job_start`, Neovim uses `jobstart`/`jobstop`/`jobwait` with nl-style line buffering. Hooks into Quality's per-job launcher.
+- `plugin/openvox.vim`: `g:openvox_auto_lint` default **0** (opt-in); `openvox_align` BufWritePre augroup registered here so `g:openvox_auto_align=1` works on cold start.
+- `autoload/openvox/align.vim`: removed duplicate `openvox_align` augroup (plugin owns registration).
+- `indent/puppet.vim`: rewritten on rodjek/vim-puppet `searchpair`/OpenBrace model (include-list commas, multiline strings, `}->` chains, closing brace/elsif); keeps `GetPuppetIndent`, OpenVox synID (Comment/String/Heredoc/Interpolation), heredoc returns `-1`.
+
+## [Unreleased] - Quality lane remediations
+
+### Fixed
+- Test harness paths: Makefile and `tests/run.vim` now use `tests/` (was broken `test/`).
+- Test suite no longer quits mid-run: `tests/test_*.vim` throw on failure; only `tests/run.vim` may `cquit`/`qall` after all files.
+- `openvox#align#block`: misalignment check expected column was off-by-one vs rewrite (`indent . key . pad . ' => '`); second `:OpenvoxAlignBlock` on aligned code no longer echoerrs "style violation".
+- `autoload/openvox/lint.vim`: per-job state (bufnr/type/output) ignores stale exit callbacks; signs unplaced by group/`openvox_*` ids only (no `sign unplace *`); `parse_puppet_lint` handles Windows paths (no naive `split(line, ':')`).
+- `tests/test_core.vim`: set `filetype=puppet` before asserting `shiftwidth == 2`.
+
+### Added
+- `openvox#lint#parse_puppet_lint_lines()` + `tests/test_lint_parse.vim` (Unix + Windows sample lines, no binary required).
 
 ## [Unreleased] - Phase 4 M1: Core Bugfixes, Hardening & Feature Wiring (Harness Execution)
 

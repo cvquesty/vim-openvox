@@ -1,4 +1,4 @@
-" compiler/openvox_lint.vim — openvox-lint (or puppet-lint compat) compiler integration
+" compiler/openvox_lint.vim — openvox-lint compiler integration
 scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
@@ -12,11 +12,17 @@ if exists(':CompilerSet') != 2
   command -nargs=* CompilerSet setlocal <args>
 endif
 
-" Dynamic default to openvox-lint; runtime g:openvox_lint_command honored (basename for display elsewhere).
+" Executable must be a single path/name — no shell metacharacters (SEC makeprg harden).
 let s:cmd = get(g:, 'openvox_lint_command', 'openvox-lint')
+if type(s:cmd) != v:t_string || s:cmd =~# '[|;&`$<>()#!\n]'
+  echoerr 'openvox: g:openvox_lint_command must be a single executable path (no shell metacharacters)'
+  finish
+endif
 
-execute 'CompilerSet makeprg=' . escape(s:cmd, ' \') . '\ --log-format\ ''%{path}:%{line}:%{column}:%{KIND}:%{check}:%{message}''\ %'
+" shellescape for exe; %:S shell-escapes the buffer name on :make;
+" \% keeps puppet-lint %{…} tokens out of Vim's %-expansion.
+let &l:makeprg = shellescape(s:cmd) . ' --log-format ''\%{path}:\%{line}:\%{column}:\%{KIND}:\%{check}:\%{message}'' %:S'
 
-" Errorformat for openvox-lint / puppet-lint compatible output
+" Errorformat for openvox-lint output
 " Format: path:line:column:KIND:check:message
 CompilerSet errorformat=%f:%l:%c:%t%*[A-Z]:%m
