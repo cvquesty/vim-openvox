@@ -27,6 +27,12 @@ function! openvox#navigate#goto_definition() abort
     return
   endif
 
+  " SEC: only Puppet name chars — block glob metacharacters in path construction
+  if l:word !~# '^[A-Za-z_][A-Za-z0-9_]*\(::[A-Za-z_][A-Za-z0-9_]*\)*$'
+    echo 'Not a valid Puppet class name: ' . l:word
+    return
+  endif
+
   " Convert :: to directory path for manifests
   " e.g., profile::base::linux → profile/manifests/base/linux.pp
   let l:parts = split(l:word, '::')

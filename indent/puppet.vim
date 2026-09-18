@@ -1,163 +1,144 @@
-" indent/puppet.vim — Puppet 8 style-guide-compliant indentation
+" indent/puppet.vim — Puppet / OpenVox indentation (rodjek/vim-puppet approach)
 scriptencoding utf-8
 " Maintainer: xAI
 " License:    Apache-2.0
 "
-" Implements the Puppet Style Guide indentation rules:
-"   - Two-space soft tabs (no hard tabs)
-"   - Opening braces on same line as statement
-"   - Arrow alignment within resource bodies
-"   - Proper continuation line handling
-"   - Chained arrow indentation
+" Ported from rodjek/vim-puppet indent/puppet.vim (searchpair / OpenBrace,
+" multiline string handling, include-list commas, }-> chains, closing
+" brace/elsif patterns). Keeps GetPuppetIndent for tests, OpenVox synID
+" awareness (Comment/String/Heredoc/Interpolation), and heredoc => -1.
 
 if exists('b:did_indent')
   finish
 endif
 let b:did_indent = 1
 
+setlocal autoindent
 setlocal indentexpr=GetPuppetIndent()
 setlocal indentkeys+=0},0],0),=elsif,=else,=unless,=default,=\|
-setlocal autoindent
+
+let b:undo_indent = 'setlocal autoindent< indentexpr< indentkeys<'
 
 if exists('*GetPuppetIndent')
   finish
 endif
 
-" ─── Helper: check if inside a string or comment ─────────────────
-" Precise logic synced with autoload/openvox/align.vim s:IsInStringOrComment
-" (covers puppetComment, puppetCComment, puppet*String, puppetHeredoc*, puppetInterpolation, etc.)
-" Uses synID for accuracy (better than regex strip in some cases); keep in sync.
-function! s:IsStringOrComment(lnum, col) abort
-  let l:syn = synIDattr(synID(a:lnum, a:col, 1), 'name')
-  return l:syn =~? 'Comment\|String\|Heredoc\|Interpolation'
-endfunction
+" Skip expression for searchpair: ignore string/comment/heredoc/interp
+let s:skip_syn = 'synIDattr(synID(line("."), col("."), 0), "name") =~? "Comment\\|String\\|Heredoc\\|Interpolation"'
 
-" ─── Helper: strip strings/comments for analysis (improved) ─────
-function! s:CleanLine(line) abort
-  let l:line = a:line
-  " Remove single-quoted strings
-  let l:line = substitute(l:line, "'[^']*'", "''", 'g')
-  " Remove double-quoted strings (simple, non-nested)
-  let l:line = substitute(l:line, '"[^"]*"', '""', 'g')
-  " Remove comments (but not inside strings — approximation is acceptable)
-  let l:line = substitute(l:line, '#.*$', '', '')
-  return l:line
-endfunction
-
-" ─── Helper: count unmatched openers/closers ─────────────────────
-function! s:CountUnmatched(line, open, close) abort
-  let l:line = s:CleanLine(a:line)
-  let l:opens = len(substitute(l:line, '[^' . a:open . ']', '', 'g'))
-  let l:closes = len(substitute(l:line, '[^' . a:close . ']', '', 'g'))
-  return l:opens - l:closes
-endfunction
-
-" ─── Helper: find the previous non-blank, non-comment/string line ──
-function! s:PrevCodeLine(lnum) abort
-  let l:lnum = prevnonblank(a:lnum - 1)
-  while l:lnum > 0
+" include foo,
+"     bar,
+"     baz
+function! s:PartOfInclude(lnum) abort
+  let l:lnum = a:lnum
+  while l:lnum
+    let l:lnum = l:lnum - 1
     let l:line = getline(l:lnum)
-    if l:line !~# '^\s*#' && !s:IsStringOrComment(l:lnum, 1)
+    if l:line !~# ',$'
       break
     endif
-    let l:lnum = prevnonblank(l:lnum - 1)
+    if l:line =~# '^\s*include\s\+[^,]\+,$' && l:line !~# '[=>]>'
+      return 1
+    endif
+  endwhile
+  return 0
+endfunction
+
+function! s:OpenBrace(lnum) abort
+  call cursor(a:lnum, 1)
+  return searchpair('{\|\[\|(', '', '}\|\]\|)', 'nbW', s:skip_syn)
+endfunction
+
+function! s:InsideMultilineString(lnum) abort
+  let l:syn = synIDattr(synID(a:lnum, 1, 0), 'name')
+  return l:syn =~? 'String\|Heredoc'
+endfunction
+
+function! s:InHeredoc(lnum) abort
+  return synIDattr(synID(a:lnum, 1, 0), 'name') =~? 'Heredoc'
+endfunction
+
+function! s:PrevNonMultilineString(lnum) abort
+  let l:lnum = a:lnum
+  while l:lnum > 0 && s:InsideMultilineString(l:lnum)
+    let l:lnum = l:lnum - 1
   endwhile
   return l:lnum
 endfunction
 
-" ─── Helper: check if inside a heredoc ───────────────────────────
-function! s:InHeredoc(lnum) abort
-  let l:syn = synIDattr(synID(a:lnum, 1, 1), 'name')
-  return l:syn =~? 'heredoc'
-endfunction
+""
+" @param a:1 (optional) line number; defaults to v:lnum
+function! GetPuppetIndent(...) abort
+  let l:lnum = get(a:, 1, v:lnum)
 
-" ─── Main indent function ────────────────────────────────────────
-function! GetPuppetIndent() abort
-  let l:clnum = v:lnum
-  let l:cline = getline(l:clnum)
-  let l:cline_clean = s:CleanLine(l:cline)
-
-  " Don't change indent inside heredocs
-  if s:InHeredoc(l:clnum)
+  " Heredoc body: do not rewrite contents (tests expect -1)
+  if s:InHeredoc(l:lnum)
     return -1
   endif
 
-  " Find previous code line
-  let l:plnum = s:PrevCodeLine(l:clnum)
-  if l:plnum == 0
+  let l:pnum = prevnonblank(l:lnum - 1)
+  if l:pnum == 0
     return 0
   endif
 
-  let l:pline = getline(l:plnum)
-  let l:pline_clean = s:CleanLine(l:pline)
-  let l:pindent = indent(l:plnum)
-
+  let l:line = getline(l:lnum)
+  let l:pline = getline(l:pnum)
+  let l:ind = indent(l:pnum)
   let l:sw = shiftwidth()
-  let l:indent = l:pindent
 
-  " ── Increase indent for opening blocks (decoupled brace/colon) ──
-  let l:brace_delta = s:CountUnmatched(l:pline, '{', '}')
-  let l:paren_delta = s:CountUnmatched(l:pline, '(', ')')
-  let l:bracket_delta = s:CountUnmatched(l:pline, '[', ']')
-
-  if l:brace_delta > 0
-    let l:indent += l:sw
-  endif
-  if l:paren_delta > 0
-    let l:indent += l:sw
-  endif
-  if l:bracket_delta > 0
-    let l:indent += l:sw
+  " Comment-only previous line: keep indent unless current closes a pair
+  if l:pline =~# '^\s*#' && l:line !~# '^\s*\(}\(,\|;\)\?$\|]:\|],\|}]\|];\?$\|)\)'
+    return l:ind
   endif
 
-  " Increase for : ONLY for case/selector or continuation (not resource title that already opened {)
-  " This prevents double-indent on "file { 'title':"
-  if l:pline_clean =~# ':\s*$' && l:brace_delta <= 0
-    let l:indent += l:sw
+  " Inside a multi-line string (non-heredoc): preserve buffer indent
+  if s:InsideMultilineString(l:lnum)
+    return indent(l:lnum)
   endif
 
-  " Real handling for control keywords
-  " Increase when previous line starts a control block without immediate {
-  if l:pline_clean =~# '\<\(if\|elsif\|else\|unless\|case\)\>' && l:pline_clean !~# '{\s*$'
-    if l:pline_clean !~# '{\s*.*}\s*$'
-      let l:indent += l:sw
+  " Previous line was inside a multi-line string: restore indent from before it
+  if s:InsideMultilineString(l:pnum)
+    if l:pnum - 1 == 0
+      return l:ind
     endif
+    let l:ind = indent(s:PrevNonMultilineString(l:pnum - 1))
   endif
 
-  " Dedent current line for closing keywords (else/elsif/default)
-  if l:cline_clean =~# '^\s*\(elsif\|else\|default\)\>'
-    let l:indent -= l:sw
-  endif
-
-  " ── Decrease indent for closing blocks ──────────────────────────
-  if l:cline_clean =~# '^\s*}'
-    let l:indent -= l:sw
-  endif
-  if l:cline_clean =~# '^\s*)'
-    let l:indent -= l:sw
-  endif
-  if l:cline_clean =~# '^\s*\]'
-    let l:indent -= l:sw
-  endif
-
-  " Handle elsif/else/default — same level as matching if/case
-  if l:cline_clean =~# '^\s*\(elsif\|else\)\>'
-    if l:pline_clean =~# '}\s*$' || l:pline_clean =~# '^\s*}'
-      " already correct via previous decreases
+  let l:bracket_eol = '\({\|\[\|(\|:\)\s*\(#.*\)\?$'
+  if l:pline =~# l:bracket_eol
+    let l:i = match(l:pline, l:bracket_eol)
+    let l:syntaxType = synIDattr(synID(l:pnum, l:i + 1, 0), 'name')
+    if l:syntaxType !~# '\(Comment\|String\|Heredoc\|Interpolation\)$'
+      let l:ind += l:sw
     endif
+  elseif l:pline =~# ';$' && l:pline !~# '[^:]\+:.*[=+]>.*'
+    let l:ind -= l:sw
+  elseif l:pline =~# '^\s*include\s\+.*,$' && l:pline !~# '[=+]>'
+    let l:ind += l:sw
   endif
 
-  " Handle } else/elsif on same line
-  if l:cline_clean =~# '^\s*}\s*\(elsif\|else\)\>'
-    let l:indent -= l:sw
+  if l:pline !~# ',$' && s:PartOfInclude(l:pnum)
+    let l:ind -= l:sw
   endif
 
-  " Lambda / chaining / semicolon continuations keep current level (no extra change)
-  " (brace_delta already handled the { )
-
-  if l:indent < 0
-    let l:indent = 0
+  " Match } }, }; ] ]: ], ]; )
+  if l:line =~# '^\s*\(}\(,\|;\)\?$\|]:\|],\|}]\|];\?$\|)\)'
+    let l:ind = indent(s:OpenBrace(l:lnum))
   endif
 
-  return l:indent
+  " } else { / } elsif {
+  if l:line =~# '^\s*}\s*els\(e\|if\).*{\s*$'
+    let l:ind -= l:sw
+  endif
+
+  " Ordering / notification chain continuation: } ->  or line ending ->
+  if l:line =~# '->$' || l:line =~# '^\s*}\s*->'
+    let l:ind -= l:sw
+  endif
+
+  if l:ind < 0
+    let l:ind = 0
+  endif
+
+  return l:ind
 endfunction

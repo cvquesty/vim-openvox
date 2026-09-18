@@ -9,6 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       matrix:
         editor: [vim, neovim]
@@ -18,12 +22,14 @@ jobs:
       - name: Setup editor
         uses: rhysd/action-setup-vim@v1
         with:
-          vim-version: stable
-          neovim-version: stable
+          version: stable
+          neovim: ${{ matrix.editor == 'neovim' }}
 
       - name: Run tests (Vim primary; user works exclusively in Vim, Neovim for compat)
         run: |
           make ci-test
+        env:
+          VIM: ${{ matrix.editor }}
 
       - name: Upload test logs (on failure)
         if: failure()
