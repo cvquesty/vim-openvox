@@ -8,7 +8,7 @@ help: ## Show this help
 
 lint: ## Run vint linter on Vimscript files (requires vint to be installed)
 	@echo "Running vint..."
-	@vint --style-check --color --verbose autoload/ plugin/ syntax/ compiler/ ftplugin/ ftdetect/ indent/ || (echo "Lint failed. Install vint with: pip install vim-vint" && exit 1)
+	@vint -s --color --verbose autoload/ plugin/ syntax/ compiler/ ftplugin/ ftdetect/ indent/ || (echo "Lint failed. Install vint with: pip install vim-vint" && exit 1)
 	@echo "Lint passed!"
 
 test: ## Run the test suite (requires Vim/Neovim in PATH)
