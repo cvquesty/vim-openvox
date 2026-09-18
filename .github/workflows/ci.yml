@@ -1,27 +1,22 @@
-name: CI (deprecated - see lint.yml and test.yml)
+name: CI
 
-on: [push, pull_request]
+# Retired. Canonical checks are lint.yml (vint) and test.yml (Vim/Neovim).
+# This workflow stays so existing shields.io badges that target ci.yml keep
+# resolving. It does not re-run vint — that lives in lint.yml.
+on:
+  push:
+    branches: [ development ]
+  pull_request:
+    branches: [ development ]
 
-# Deprecated: Evolved into separate lint.yml (vint/make lint) and test.yml (matrix + make ci-test).
-# Old logic preserved for transition; will be removed in M4.
 jobs:
-  lint:
+  redirect:
+    name: Retired — see lint.yml and test.yml
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install vint
+      - name: Confirm canonical workflows
         run: |
-          pip install --upgrade pip
-          pip install vim-vint
-
-      - name: Run vint (style check)
-        run: |
-          vint --style . --verbose || true
-          vint --style . 2>&1 | tee vint.log
-          if grep -q "error" vint.log; then
-            echo "Vint found errors"
-            exit 1
-          fi
-        continue-on-error: false
-
+          test -f .github/workflows/lint.yml
+          test -f .github/workflows/test.yml
+          echo "ci.yml is retired. Use lint.yml and test.yml."
