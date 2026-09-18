@@ -80,7 +80,8 @@ function! openvox#align#arrows(...) range abort
   endif
 
   " Second pass: rewrite only the safe lines so => is aligned to common column.
-  " arrow start col for => = len(indent) + max_key_len  (pads ensure space before '=>'; see ' => ' in concat).
+  " Rewrite uses: indent . key . pad . ' => ' . value
+  " so byte index of '=' is len(indent) + max_key_len + 1 (the space before =>).
   " No dead target_col (was scope-leaked from prior loop, unused). Proper per-entry.
   for l:entry in l:safe_lines
     let l:key_len = len(l:entry.key)
@@ -156,7 +157,7 @@ function! openvox#align#block(...) abort
 
   " Align only the interior lines (skip the opening { line and closing } line)
   " Proper column-based detection for true cross-line misalignment (replaces rough post-=> heuristic).
-  " Collect safe arrows + current cols, compute max_key, compare each arrow_col to expected (indent + max).
+  " Collect safe arrows + current cols, compute max_key, compare each arrow_col to expected (indent + max_key_len + 1).
   let l:interior_lines = getline(l:open + 1, l:close - 1)
   let l:safe_in_block = []
   let l:lnum = l:open + 1
@@ -190,17 +191,19 @@ function! openvox#align#block(...) abort
       endif
     endfor
     for l:e in l:safe_in_block
-      " Expected start col of => after proper pads (see arrows() rewrite logic).
-      let l:expected = len(l:e.indent) + l:max_key_len
+      " Expected byte index of '=' after rewrite: indent + max_key + one space before =>.
+      " (arrows() builds: indent . key . pad . ' => ' . value)
+      let l:expected = len(l:e.indent) + l:max_key_len + 1
       if l:e.arrow_col != l:expected
         let l:unaligned += 1
       endif
     endfor
   endif
-  if l:unaligned > 0
-    if !l:silent
-      echoerr printf('Blatant style violation: %d unaligned => arrow(s) in block – run align or fix manually per Puppet style guide', l:unaligned)
-    endif
+  " Warn (non-fatal): echoerr would abort before we auto-align below.
+  if l:unaligned > 0 && !l:silent
+    echohl WarningMsg
+    echomsg printf('Style: %d unaligned => arrow(s) in block — aligning now', l:unaligned)
+    echohl None
   endif
 
   execute (l:open + 1) . ',' . (l:close - 1) . 'call openvox#align#arrows(' . l:silent . ')'
@@ -208,10 +211,3 @@ function! openvox#align#block(...) abort
   call setpos('.', l:save_pos)
 endfunction
 
-" Auto-align on BufWritePre (if g:openvox_auto_align). Calls block(1) for silent (no noise on save).
-" Only real violations would have used echoerr (but suppressed in auto silent); auto primarily *fixes* silently.
-" Safety model fully preserved (IsInStringOrComment + searchpair skip).
-augroup openvox_align
-  autocmd!
-  autocmd BufWritePre *.pp if get(g:, 'openvox_auto_align', 0) | call openvox#align#block(1) | endif
-augroup END

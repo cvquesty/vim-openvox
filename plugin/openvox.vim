@@ -16,7 +16,7 @@ let g:openvox_plugin_version = '1.1.0'
 
 " ─── Configuration defaults ──────────────────────────────────────
 
-" openvox-lint (preferred) / puppet-lint command path. Default openvox-lint per OpenVox branding.
+" openvox-lint command path. Default: openvox-lint.
 if !exists('g:openvox_lint_command')
   let g:openvox_lint_command = 'openvox-lint'
 endif
@@ -58,17 +58,17 @@ if !exists('g:openvox_no_mappings')
   let g:openvox_no_mappings = 0
 endif
 
-" Auto-lint on save (default: on)
+" Auto-lint on save (default: off / opt-in). Enable: let g:openvox_auto_lint = 1
 if !exists('g:openvox_auto_lint')
-  let g:openvox_auto_lint = 1
+  let g:openvox_auto_lint = 0
 endif
 
-" Extra puppet-lint arguments (list)
+" Extra openvox-lint arguments (list)
 if !exists('g:openvox_lint_args')
   let g:openvox_lint_args = []
 endif
 
-" Disabled puppet-lint checks (list of check names without -check suffix)
+" Disabled openvox-lint checks (list of check names without -check suffix)
 if !exists('g:openvox_lint_disabled_checks')
   let g:openvox_lint_disabled_checks = []
 endif
@@ -120,7 +120,7 @@ augroup OpenvoxPlugin
   autocmd!
 
   " Auto-lint on save
-  if get(g:, 'openvox_auto_lint', 1)
+  if get(g:, 'openvox_auto_lint', 0)
     autocmd BufWritePost *.pp call openvox#lint#run()
     autocmd BufWritePost */metadata.json
           \ if &filetype =~# 'puppet_metadata' |
@@ -136,4 +136,10 @@ augroup OpenvoxPlugin
   " Hiera YAML settings
   autocmd FileType yaml.puppet_hiera setlocal tabstop=2 softtabstop=2 shiftwidth=2 expandtab
 
+augroup END
+
+" Auto-align on BufWritePre (in plugin so cold start with g:openvox_auto_align=1 works)
+augroup openvox_align
+  autocmd!
+  autocmd BufWritePre *.pp if get(g:, 'openvox_auto_align', 0) | call openvox#align#block(1) | endif
 augroup END
