@@ -23,20 +23,14 @@ test: ## Run the test suite (requires Vim/Neovim in PATH)
 	fi
 	@echo "All tests passed."
 
-ci-test: ## CI-friendly test (no interactive, capture output)
-	@vim -Nu tests/vimrc -es -S tests/run.vim -c 'if get(g:, "test_failures", 1) | cquit 1 | else | qall! | endif' > /tmp/vim-test.log 2>&1 || (cat /tmp/vim-test.log; cat /tmp/vim-openvox-test-result.txt 2>/dev/null; exit 1)
-	@if command -v nvim >/dev/null 2>&1; then \
+ci-test: ## CI-friendly test (honors VIM=vim|neovim from the matrix)
+	@if [ "$${VIM}" = "neovim" ]; then \
 		nvim --headless -u tests/vimrc -S tests/run.vim -c 'if get(g:, "test_failures", 1) | cquit 1 | else | qall! | endif' > /tmp/nvim-test.log 2>&1 || (cat /tmp/nvim-test.log; cat /tmp/vim-openvox-test-result.txt 2>/dev/null; exit 1); \
 	else \
-		echo "Skipping Neovim tests (nvim not in PATH)."; \
+		vim -Nu tests/vimrc -es -S tests/run.vim -c 'if get(g:, "test_failures", 1) | cquit 1 | else | qall! | endif' > /tmp/vim-test.log 2>&1 || (cat /tmp/vim-test.log; cat /tmp/vim-openvox-test-result.txt 2>/dev/null; exit 1); \
 	fi
 	@echo "CI tests passed."
-
 
 clean: ## Clean temporary files
 	@find . -name "*.swp" -o -name "*.swo" -o -name "*~" | xargs rm -f || true
 	@echo "Cleaned."
-
-# Future targets ideas:
-# release: Tag and push for new version
-# ci: lint + test (for CI environments)

@@ -21,3 +21,11 @@ endif
 
 " Use openvox-lint by default in tests
 let g:openvox_lint_command = 'openvox-lint'
+" Ensure our ftplugin + indent win under Neovim headless (system packs can race)
+function! OpenvoxTestLoadPuppet() abort
+  setlocal filetype=puppet
+  unlet! b:did_ftplugin
+  unlet! b:did_indent
+  runtime! ftplugin/puppet.vim
+  runtime! indent/puppet.vim
+endfunction

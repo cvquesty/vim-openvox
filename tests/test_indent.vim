@@ -4,7 +4,7 @@
 echo 'Running vim-openvox indent tests...'
 
 new
-setfiletype puppet
+call OpenvoxTestLoadPuppet()
 
 " Test 1: Basic resource indent (2 spaces) via ==
 call setline(1, ['file { ''/tmp/test'':', 'ensure => file,', 'owner => root,', '}'])
