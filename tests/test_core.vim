@@ -51,7 +51,7 @@ echo 'PASS: Default configs reasonable'
 
 " Test 5: Indent setup requires puppet filetype
 new
-setfiletype puppet
+call OpenvoxTestLoadPuppet()
 if &shiftwidth != 2 || !&expandtab
   echo 'FAIL: Indent not set to 2-space soft tabs (sw=' . &shiftwidth . ' et=' . &expandtab . ')'
   bwipe!

@@ -4,7 +4,7 @@
 echo 'Running vim-openvox align tests...'
 
 new
-setfiletype puppet
+call OpenvoxTestLoadPuppet()
 
 " Test 1: Basic alignment of arrows
 call setline(1, ['file { ''/tmp/test'':', '  ensure => ''file'',', '  owner => ''root'',', '  mode => ''0644'',', '}'])
