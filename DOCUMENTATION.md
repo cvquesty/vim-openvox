@@ -131,7 +131,7 @@ vim-openvox/
 | `:OpenvoxInit` | none | `openvox#snippets#init()` |
 
 **Autocmd Group `OpenvoxPlugin`:**
-- `BufWritePost *.pp` → `openvox#lint#run()` (when `g:openvox_auto_lint == 1`)
+- `BufWritePost *.pp` → `openvox#lint#run(1)` (when `g:openvox_auto_lint == 1`; default is on). A missing openvox-lint binary warns and returns; `:w` is not blocked. The auto path warns once per command.
 - `BufWritePost */metadata.json` → `openvox#lint#metadata()` (if filetype matches `puppet_metadata`)
 - `BufWritePost */data/*.yaml, */hieradata/*.yaml` etc. → `openvox#lint#yaml()`
 - `FileType epuppet` → sets 2-space tabs

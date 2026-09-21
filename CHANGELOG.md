@@ -1,5 +1,11 @@
 ## Unreleased
 
+### Changed
+- `g:openvox_auto_lint` defaults to **1** (openvox-lint on save). Opt out with `let g:openvox_auto_lint = 0`.
+- Missing `openvox-lint` / `g:openvox_lint_command` soft-fails: `:w` and `:OpenvoxLint` warn and skip the job. The auto-save path warns once per command. Async lint stays list-argv.
+
+## Unreleased
+
 ### Quality
 - Fix test harness paths (`tests/` not `test/`) and stop per-file `qall`/`cquit` so the full suite can run.
 - Run tests in Vim `-es` / Neovim `--headless` with an explicit quit `-c` so CI does not hang on exit.

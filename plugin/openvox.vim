@@ -58,9 +58,10 @@ if !exists('g:openvox_no_mappings')
   let g:openvox_no_mappings = 0
 endif
 
-" Auto-lint on save (default: off / opt-in). Enable: let g:openvox_auto_lint = 1
+" Auto-lint on save (default: on). Disable: let g:openvox_auto_lint = 0
+" A missing openvox-lint binary soft-fails (warn, never blocks :w).
 if !exists('g:openvox_auto_lint')
-  let g:openvox_auto_lint = 0
+  let g:openvox_auto_lint = 1
 endif
 
 " Extra openvox-lint arguments (list)
@@ -119,16 +120,16 @@ command! -nargs=0 OpenvoxInit      call openvox#snippets#init()
 augroup OpenvoxPlugin
   autocmd!
 
-  " Auto-lint on save
-  if get(g:, 'openvox_auto_lint', 0)
-    autocmd BufWritePost *.pp call openvox#lint#run()
-    autocmd BufWritePost */metadata.json
-          \ if &filetype =~# 'puppet_metadata' |
-          \   call openvox#lint#metadata() |
-          \ endif
-    autocmd BufWritePost */data/*.yaml,*/data/*.yml,*/hieradata/*.yaml,*/hieradata/*.yml
-          \ call openvox#lint#yaml()
-  endif
+  " Auto-lint on save. Checked when the buffer is written so
+  " `let g:openvox_auto_lint = 0` (including the test harness) skips jobs.
+  autocmd BufWritePost *.pp
+        \ if get(g:, 'openvox_auto_lint', 1) | call openvox#lint#run(1) | endif
+  autocmd BufWritePost */metadata.json
+        \ if get(g:, 'openvox_auto_lint', 1) && &filetype =~# 'puppet_metadata' |
+        \   call openvox#lint#metadata() |
+        \ endif
+  autocmd BufWritePost */data/*.yaml,*/data/*.yml,*/hieradata/*.yaml,*/hieradata/*.yml
+        \ if get(g:, 'openvox_auto_lint', 1) | call openvox#lint#yaml() | endif
 
   " EPP template ftplugin settings
   autocmd FileType epuppet setlocal tabstop=2 softtabstop=2 shiftwidth=2 expandtab

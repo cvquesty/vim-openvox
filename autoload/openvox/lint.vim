@@ -17,13 +17,61 @@ let s:next_job_id = 0
 let s:jobs = {}
 " Track openvox sign ids per buffer when sign_group API is unavailable
 let s:sign_ids = {}
+" Auto-save warns once per missing openvox-lint command so :w is not spammed.
+let s:auto_lint_missing_warned = ''
 
 " ─── lint (openvox-lint preferred; puppet-lint compatible) ─────────
 
+" Configured openvox-lint argv0. Empty or non-string falls back to the name.
+function! s:configured_lint_command() abort
+  let l:cmd = get(g:, 'openvox_lint_command', 'openvox-lint')
+  if type(l:cmd) != v:t_string || empty(l:cmd)
+    return 'openvox-lint'
+  endif
+  return l:cmd
+endfunction
+
+" Warn that openvox-lint cannot be started. a:auto is the BufWritePost path:
+" warn once per command so a missing binary never blocks :w.
+function! s:warn_missing_lint(cmd, auto) abort
+  if a:auto && s:auto_lint_missing_warned ==# a:cmd
+    return
+  endif
+  if a:auto
+    let s:auto_lint_missing_warned = a:cmd
+  endif
+  let l:tool = fnamemodify(a:cmd, ':t')
+  if empty(l:tool)
+    let l:tool = 'openvox-lint'
+  endif
+  let l:hint = a:cmd =~# '[/\\]' ? a:cmd : 'gem install openvox-lint'
+  echohl WarningMsg
+  echomsg l:tool . ': not found; lint skipped (' . l:hint . ')'
+  echohl None
+endfunction
+
+" Return the lint command when it is executable, otherwise '' after a warning.
+" Checked before job_start / s:start_job so a missing binary does not throw.
+function! s:require_lint_executable(auto) abort
+  let l:cmd = s:configured_lint_command()
+  if executable(l:cmd)
+    return l:cmd
+  endif
+  call s:warn_missing_lint(l:cmd, a:auto)
+  return ''
+endfunction
+
 function! openvox#lint#run(...) abort
+  " a:1 truthy marks the BufWritePost auto path (warn once).
+  let l:auto = a:0 > 0 && a:1
+  let l:cmd = s:require_lint_executable(l:auto)
+  if empty(l:cmd)
+    return
+  endif
+
   let l:file = expand('%:p')
   if empty(l:file) || !filereadable(l:file)
-    let l:tool = fnamemodify(get(g:, 'openvox_lint_command', 'openvox-lint'), ':t')
+    let l:tool = fnamemodify(l:cmd, ':t')
     echohl WarningMsg | echo l:tool . ': No file to lint' | echohl None
     return
   endif
@@ -35,7 +83,6 @@ function! openvox#lint#run(...) abort
   let l:bufnr = bufnr('%')
   call s:cancel_jobs_for_bufnr(l:bufnr)
 
-  let l:cmd = get(g:, 'openvox_lint_command', 'openvox-lint')
   let l:tool = fnamemodify(l:cmd, ':t')
   let l:args = [l:cmd]
 
@@ -61,9 +108,14 @@ function! openvox#lint#run(...) abort
 endfunction
 
 function! openvox#lint#fix() abort
+  let l:cmd = s:require_lint_executable(0)
+  if empty(l:cmd)
+    return
+  endif
+
   let l:file = expand('%:p')
   if empty(l:file) || !filereadable(l:file)
-    let l:tool = fnamemodify(get(g:, 'openvox_lint_command', 'openvox-lint'), ':t')
+    let l:tool = fnamemodify(l:cmd, ':t')
     echohl WarningMsg | echo l:tool . ': No file to fix' | echohl None
     return
   endif
@@ -75,7 +127,6 @@ function! openvox#lint#fix() abort
   let l:bufnr = bufnr('%')
   call s:cancel_jobs_for_bufnr(l:bufnr)
 
-  let l:cmd = get(g:, 'openvox_lint_command', 'openvox-lint')
   let l:tool = fnamemodify(l:cmd, ':t')
   let l:args = [l:cmd, '--fix', l:file]
 
@@ -180,7 +231,7 @@ endfunction
 function! openvox#lint#auto() abort
   let l:ft = &filetype
   if l:ft ==# 'puppet'
-    call openvox#lint#run()
+    call openvox#lint#run(1)
   elseif l:ft =~# 'puppet_metadata'
     call openvox#lint#metadata()
   elseif l:ft =~# 'puppet_hiera' || l:ft ==# 'yaml'

@@ -30,7 +30,7 @@ A comprehensive Vim plugin for OpenVox and Puppet 8+ development, built around t
 | **Syntax Highlighting** | Full Puppet 8 language — resource types, 90+ built-in functions, data types, heredocs, string interpolation, regex, operators, EPP templates |
 | **Indentation** | 2-space soft tabs with significantly improved resource and conditional handling (actively ported toward gold-standard vim-puppet behavior) |
 | **Arrow Alignment** | Align `=>` arrows per style guide (visual selection, block command, or optional auto-align on save) |
-| **Linting** | Async openvox-lint for manifests; metadata-json-lint; yamllint for Hiera |
+| **Linting** | Async openvox-lint for manifests (on save by default); metadata-json-lint; yamllint for Hiera |
 | **Omni-completion** | Context-aware completion for types, attributes, functions, variables, ensure values |
 | **Navigation** | Go-to-definition (`gd`), block jumping (`[[` / `]]`) |
 | **Documentation** | Press `K` to open Puppet docs in browser |
@@ -71,17 +71,19 @@ git clone https://github.com/cvquesty/vim-openvox.git
 
 Syntax highlighting, folding, indentation, navigation, and mappings work out of the box after install.
 
-For linting, install the OpenVox linter:
+Linting runs on save by default. Install the OpenVox linter:
 
 ```bash
 gem install openvox-lint
 ```
 
+That gem is [openvox-lint](https://github.com/cvquesty/openvox-lint). If the binary is missing or not on `$PATH`, Vim warns and skips the job — `:w` still saves. Turn auto-lint off with `let g:openvox_auto_lint = 0`.
+
 Optional: `gem install metadata-json-lint` and `pip install yamllint` for metadata / Hiera checks.
 
 Useful defaults (see Configuration):
 
-- `g:openvox_auto_lint` — auto-run openvox-lint on save (default: `0`; set to `1` to enable)
+- `g:openvox_auto_lint` — auto-run openvox-lint on save (default: `1`; set to `0` to turn off)
 - `g:openvox_auto_align` — auto-align `=>` on save (default: `0`; set to `1` to enable)
 - `g:openvox_lint_open_quickfix` — auto-open quickfix on lint errors (default: `0`)
 
@@ -122,7 +124,8 @@ See Key Mappings and Commands below, or `:help openvox` for the full reference.
 Add to your `.vimrc`:
 
 ```vim
-" Auto-lint on save (default: 0/off). Enable with:
+" Auto-lint on save (default: 1/on). Turn off with:
+" let g:openvox_auto_lint = 0
 let g:openvox_auto_lint = 1
 
 " Auto-align => arrows on BufWritePre (default: 0/off)
