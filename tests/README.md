@@ -12,7 +12,7 @@ make lint          # Run vint on Vimscript
 Tests use an isolated vimrc and run via `tests/run.vim`.
 
 ## Test Files
-- `test_core.vim`: Plugin load, commands, functions, defaults, indent settings.
+- `test_core.vim`: Plugin load, commands, functions, defaults (product `g:openvox_auto_lint` is 1; vimrc forces 0), missing-binary soft-fail, indent settings.
 - `test_align.vim`: Arrow alignment (basic, safety for strings/heredocs, block()).
 - `test_indent.vim`: 2-space indent for resources, heredocs, control structures.
 
